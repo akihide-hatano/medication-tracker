@@ -48,6 +48,15 @@ services:
                 - '${DB_USERNAME}'
             retries: 3
             timeout: 5s
+# Mailpit サービス
+    mailpit:
+        image: 'docker.io/axllent/mailpit:latest'
+        ports:
+            - '1025:1025' # SMTPポート
+            - '8025:8025' # Web UIポート
+        networks:
+            - sail
+
 networks:
     sail:
         driver: bridge
