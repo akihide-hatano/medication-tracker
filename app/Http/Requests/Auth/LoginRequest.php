@@ -59,7 +59,9 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        // 変更箇所: 試行回数を 5 から 3 に変更
+        // 変更箇所: ロックアウト時間を 60秒（デフォルト）から 600秒（10分）に変更
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 3, 6000)) { // ★ここを変更
             return;
         }
 
