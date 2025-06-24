@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('medications', function (Blueprint $table) {
-            $table->id('medication_id');
-            $table->string('medication_name')->unique();
+            $table->id('medication_id');//PKを 'medication_id' に指定
+            $table->string('medication_name')->unique(); //薬の名前
             $table->string('dosage');//1錠あたりの記載量
             $table->text('notes')->nullable(); // 備考
             $table->text('effect')->nullable(); // 効果
