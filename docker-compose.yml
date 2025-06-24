@@ -56,10 +56,27 @@ services:
             - '8025:8025' # Web UIポート
         networks:
             - sail
+    # ★ここからPgAdminサービスを追加★
+    pgadmin:
+        image: dpage/pgadmin4 # PgAdminの公式イメージ
+        environment:
+            PGADMIN_DEFAULT_EMAIL: '${PGADMIN_EMAIL:-admin@example.com}' # .envから参照
+            PGADMIN_DEFAULT_PASSWORD: '${PGADMIN_PASSWORD:-password}'   # .envから参照
+            PGADMIN_LISTEN_PORT: 80 # コンテナ内部のPgAdminがリッスンするポート
+        ports:
+            - '${FORWARD_PGADMIN_PORT:-8080}:80' # ホスト側のポート:コンテナ内部のポート
+        volumes:
+            - 'sail-pgadmin:/var/lib/pgadmin' # PgAdminのデータを永続化
+        networks:
+            - sail
+        depends_on:
+            - pgsql # pgsqlサービスが起動してからpgadminを起動
 
 networks:
     sail:
         driver: bridge
 volumes:
     sail-pgsql:
+        driver: local
+    sail-pgadmin:
         driver: local
