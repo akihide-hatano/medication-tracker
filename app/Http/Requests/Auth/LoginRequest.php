@@ -61,7 +61,7 @@ class LoginRequest extends FormRequest
     {
         // 変更箇所: 試行回数を 5 から 3 に変更
         // 変更箇所: ロックアウト時間を 60秒（デフォルト）から 600秒（10分）に変更
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 3, 600)) { // ★ここを変更
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 3)) { // ★ここを変更
             return;
         }
 
