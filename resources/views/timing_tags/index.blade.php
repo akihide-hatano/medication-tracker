@@ -29,7 +29,7 @@
                     @if ($timingTags->isEmpty())
                         <p class="text-gray-600 text-center text-lg py-10">まだ服用タイミングが登録されていません。</p>
                     @else
-                        <div class="overflow-x-auto">
+                        <div class="overflow-x-auto"> {{-- テーブルが画面からはみ出る場合に横スクロールを可能にする --}}
                             <table class="min-w-full leading-normal">
                                 <thead>
                                     <tr>
@@ -50,23 +50,23 @@
                                 <tbody>
                                     @foreach ($timingTags as $timingTag)
                                     <tr class="hover:bg-gray-50 transition-colors duration-200">
-                                        <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                        <td class="px-5 py-3 border-b border-gray-200 bg-white text-sm"> {{-- py-5 から py-3 に変更し、text-sm に統一 --}}
                                             {{ $timingTag->timing_tag_id }}
                                         </td>
-                                        <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                        <td class="px-5 py-3 border-b border-gray-200 bg-white text-sm"> {{-- py-5 から py-3 に変更し、text-sm に統一 --}}
                                             {{ $timingTag->timing_name }}
                                         </td>
-                                        <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                        <td class="px-5 py-3 border-b border-gray-200 bg-white text-sm"> {{-- py-5 から py-3 に変更し、text-sm に統一 --}}
                                             {{ $timingTag->created_at->format('Y/m/d H:i') }}
                                         </td>
-                                        <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                                            <div class="flex items-center space-x-3">
-                                                <a href="{{ route('timing_tags.show', $timingTag->timing_tag_id) }}" class="text-blue-600 hover:text-blue-900 text-sm font-semibold">詳細</a>
-                                                <a href="{{ route('timing_tags.edit', $timingTag->timing_tag_id) }}" class="text-green-600 hover:text-green-900 text-sm font-semibold">編集</a>
+                                        <td class="px-5 py-3 border-b border-gray-200 bg-white text-sm"> {{-- py-5 から py-3 に変更し、text-sm に統一 --}}
+                                            <div class="flex items-center space-x-2"> {{-- space-x-3 から space-x-2 に変更 --}}
+                                                <a href="{{ route('timing_tags.show', $timingTag->timing_tag_id) }}" class="text-blue-600 hover:text-blue-900 text-xs font-semibold py-1 px-2 rounded-md bg-blue-50 hover:bg-blue-100">詳細</a> {{-- サイズと背景色を調整 --}}
+                                                <a href="{{ route('timing_tags.edit', $timingTag->timing_tag_id) }}" class="text-green-600 hover:text-green-900 text-xs font-semibold py-1 px-2 rounded-md bg-green-50 hover:bg-green-100">編集</a> {{-- サイズと背景色を調整 --}}
                                                 <form action="{{ route('timing_tags.destroy', $timingTag->timing_tag_id) }}" method="POST" onsubmit="return confirm('本当にこのタイミングを削除しますか？ この操作は元に戻せません。');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-900 text-sm font-semibold bg-transparent border-none p-0 cursor-pointer">削除</button>
+                                                    <button type="submit" class="text-red-600 hover:text-red-900 text-xs font-semibold bg-red-50 hover:bg-red-100 rounded-md py-1 px-2 cursor-pointer border-none">削除</button> {{-- サイズと背景色を調整 --}}
                                                 </form>
                                             </div>
                                         </td>
@@ -78,7 +78,7 @@
                     @endif
 
                     <div class="mt-8 text-center">
-                        <a href="{{ route('home') }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-lg hover:underline transition-colors duration-300">
+                        <a href="" class="text-indigo-600 hover:text-indigo-900 font-semibold text-lg hover:underline transition-colors duration-300">
                             トップページに戻る
                         </a>
                     </div>
