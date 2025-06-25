@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('timing_tags', function (Blueprint $table) {
-            $table->id('timing_tag_id');
-            $table->string('timing_name')->unique();//服用タイミング
-            $table->timestamps();
+            $table->id('timing_tag_id'); // 主キー (デフォルトのidメソッドでカスタム名も指定可能)
+            $table->string('timing_name')->unique(); // タイミングの名前、ユニーク制約
+            $table->timestamps(); // created_at と updated_at カラムを自動で追加
         });
     }
 

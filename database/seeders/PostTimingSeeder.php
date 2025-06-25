@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Post;
 use App\Models\TimingTag;
-
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Arr;
@@ -29,21 +28,19 @@ class PostTimingSeeder extends Seeder
         }
 
         foreach($posts as $post){
-            // 各投稿に割り当てるタイミングタグの数をランダムに決める（2～4個）
-            // ただし、利用可能なタグの数を超えないようにする
             $numTagsToAssign = rand(2,min(4,$timingTags->count()));
-
-            // 全てのタイミングタグからランダムに$numTagsToAssign個選択
             $selectedTimingTags = $timingTags->random($numTagsToAssign);
 
+            // この投稿に紐付けるタイミングタグのIDとピボットデータを収集
+            $syncData = [];
             foreach ($selectedTimingTags as $timingTag) {
-                // Post と TimingTag の間にリレーションを作成（中間テーブルへの挿入）
-                // firstOrCreate を使用して、既に存在しない場合のみ作成
-                $post->timingTags()->firstOrCreate([
-                    'timing_tag_id' => $timingTag->timing_tag_id,
-                    'is_completed' => rand(0, 1), // そのタイミングが完了したかどうかをランダムで設定
-                ]);
+                $isCompleted = (rand(0, 1) === 1); // 50%の確率でtrue/false
+                $syncData[$timingTag->timing_tag_id] = ['is_completed' => $isCompleted];
             }
+
+            // syncWithoutDetaching を使用してまとめてアタッチ
+            // 既に存在する場合は更新され、存在しない場合は作成される
+            $post->timingTags()->syncWithoutDetaching($syncData);
         }
     }
 }

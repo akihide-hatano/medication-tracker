@@ -22,13 +22,18 @@ class PostSeeder extends Seeder
             return;
         }
 
-        //各ユーザーに対して過去30日間の投稿を作成する
+        // 各ユーザーに対して過去の日付の投稿を作成する
+        // ユーザーごとに日付のオフセットを設けることで、post_date の重複を避ける
+        $userOffset = 0;
         foreach($users as $user){
             for($i = 0; $i < 30; $i++){
-                $date = Carbon::now()->subDays($i)->toDateString();
+                // ユーザーごとに異なる日付範囲を生成
+                // 例: ユーザー1は今日から過去29日、ユーザー2は30日前から過去59日、といった具合
+                $date = Carbon::now()->subDays($i + ($userOffset * 30))->toDateString();
 
-                //その日付の投稿がまだ存在しない場合のみ作成
-                if(Post::where('user_id',$user->id)->where('post_data',$date)->doesntExist()){
+                // その日付の投稿がまだ存在しない場合のみ作成 (一応のチェック)
+                // このロジック修正により、基本的には重複しなくなるはず
+                if(Post::where('user_id',$user->id)->where('post_date',$date)->doesntExist()){
                     Post::create([
                         'user_id'=>$user->id,
                         'post_date'=>$date,
@@ -38,7 +43,7 @@ class PostSeeder extends Seeder
                     ]);
                 }
             }
+            $userOffset++; // 次のユーザーのためにオフセットを増やす
         }
-
     }
 }
