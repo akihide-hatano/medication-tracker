@@ -18,7 +18,6 @@ class MedicationController extends Controller
 
     public function create()
     {
-        dump("medications.create ビューをロードします"); // ★追加: ビューが呼び出される直前に確認
         return view('medications.create');
     }
 
@@ -41,8 +40,6 @@ class MedicationController extends Controller
         dump($validatedData); // ★追加: バリデーション後のデータを確認
 
         $medication = Medication::create($validatedData);
-        dump($medication); // ★追加: データベースに保存されたMedicationモデルのインスタンスを確認
-
         return redirect()->route('medications.index')->with('success', '薬が正常に追加されました！');
     }
 
@@ -54,7 +51,6 @@ class MedicationController extends Controller
      */
     public function show(Medication $medication)
     {
-        dump($medication); // ★追加: ルートモデルバインディングで取得した特定の薬のインスタンスを確認
         return view('medications.show', compact('medication'));
     }
 
@@ -66,7 +62,6 @@ class MedicationController extends Controller
      */
     public function edit(Medication $medication)
     {
-        dump($medication); // ★追加: ルートモデルバインディングで取得した特定の薬のインスタンスを確認
         return view('medications.edit', compact('medication'));
     }
 
@@ -91,7 +86,6 @@ class MedicationController extends Controller
         dump($validatedData); // ★追加: バリデーション後のデータを確認
 
         $medication->update($validatedData);
-        dump($medication); // ★追加: 更新後のMedicationモデルのインスタンスを確認
 
         return redirect()->route('medications.show', $medication->medication_id)->with('success', '薬の情報が正常に更新されました！');
     }
@@ -104,7 +98,6 @@ class MedicationController extends Controller
      */
     public function destroy(Medication $medication)
     {
-        dump("削除対象の薬:"); // ★追加: 削除される薬のインスタンスを確認
         dump($medication);
         $medication->delete();
 
