@@ -34,7 +34,7 @@ class PostTimingSeeder extends Seeder
             // この投稿に紐付けるタイミングタグのIDとピボットデータを収集
             $syncData = [];
             foreach ($selectedTimingTags as $timingTag) {
-                $isCompleted = (rand(0, 1) === 1); // 50%の確率でtrue/false
+                $isCompleted = (rand(1,100) <= 95); // 50%の確率でtrue/false
                 $syncData[$timingTag->timing_tag_id] = ['is_completed' => $isCompleted];
             }
 
