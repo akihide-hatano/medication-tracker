@@ -30,7 +30,6 @@ class TimingTag extends Model
             'medication_id'          // Medication モデルの外部キー
         );
     }
-
     /**
      * このタイミングタグに関連付けられている投稿を取得
      * (多対多リレーションシップ - posts_timing 中間テーブルを使用)
