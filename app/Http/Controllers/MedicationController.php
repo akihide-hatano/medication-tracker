@@ -12,7 +12,6 @@ class MedicationController extends Controller
     public function index()
     {
         $medications = Medication::all();
-        dump($medications); // ★追加: データベースから取得した薬のコレクションを確認
         return view('medications.index', compact('medications'));
     }
 
@@ -29,7 +28,6 @@ class MedicationController extends Controller
      */
     public function store(Request $request)
     {
-        dump($request->all()); // ★追加: フォームから送信された全てのデータを確認
         $validatedData = $request->validate([
             'medication_name' => 'required|string|max:255',
             'dosage' => 'nullable|string|max:255',
@@ -37,7 +35,6 @@ class MedicationController extends Controller
             'effect' => 'nullable|string',
             'side_effects' => 'nullable|string',
         ]);
-        dump($validatedData); // ★追加: バリデーション後のデータを確認
 
         $medication = Medication::create($validatedData);
         return redirect()->route('medications.index')->with('success', '薬が正常に追加されました！');
@@ -74,8 +71,7 @@ class MedicationController extends Controller
      */
     public function update(Request $request, Medication $medication)
     {
-        dump($request->all()); // ★追加: フォームから送信された全てのデータを確認
-        dump($medication);     // ★追加: 更新対象のMedicationモデルのインスタンスを確認
+
         $validatedData = $request->validate([
             'medication_name' => 'required|string|max:255',
             'dosage' => 'nullable|string|max:255',
@@ -83,7 +79,6 @@ class MedicationController extends Controller
             'effect' => 'nullable|string',
             'side_effects' => 'nullable|string',
         ]);
-        dump($validatedData); // ★追加: バリデーション後のデータを確認
 
         $medication->update($validatedData);
 
@@ -98,7 +93,7 @@ class MedicationController extends Controller
      */
     public function destroy(Medication $medication)
     {
-        dump($medication);
+
         $medication->delete();
 
         return redirect()->route('medications.index')->with('success', '薬が正常に削除されました！');
