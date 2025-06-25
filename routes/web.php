@@ -4,6 +4,8 @@ use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MedicationController;
+use App\Http\Controllers\PostController;
+use App\Http\Controllers\TimingTagController;
 
 //トップページ
 Route::get('/',[HomeController::class,'index'])->name('home');
@@ -17,6 +19,10 @@ Route::get('/medications/{medication}/edit', [MedicationController::class, 'edit
 Route::put('/medications/{medication}', [MedicationController::class, 'update'])->name('medications.update');
 Route::patch('/medications/{medication}', [MedicationController::class, 'update']); // PUTと同じメソッドを使うことが多い
 Route::delete('/medications/{medication}', [MedicationController::class, 'destroy'])->name('medications.destroy');
+
+Route::resource('posts',PostController::class);
+
+Route::resource('timing_tags',TimingTagController::class);
 
 Route::get('/', function () {
     return view('welcome');
