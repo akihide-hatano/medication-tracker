@@ -8,10 +8,7 @@ use Illuminate\Support\Facades\Log; // Log も引き続き利用可能
 
 class MedicationController extends Controller
 {
-    /**
-     * 薬の一覧ページを表示
-     * GET /medications
-     */
+
     public function index()
     {
         $medications = Medication::all();
@@ -19,10 +16,6 @@ class MedicationController extends Controller
         return view('medications.index', compact('medications'));
     }
 
-    /**
-     * 新しい薬の作成フォームを表示
-     * GET /medications/create
-     */
     public function create()
     {
         dump("medications.create ビューをロードします"); // ★追加: ビューが呼び出される直前に確認
