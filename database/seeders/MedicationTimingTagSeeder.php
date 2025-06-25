@@ -7,7 +7,7 @@ use App\Models\TimingTag;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Arr;
-use function mb_strpos; // ★マルチバイト文字対応のために必要
+use function mb_strpos; // マルチバイト文字対応のために必要
 
 class MedicationTimingTagSeeder extends Seeder
 {
@@ -28,8 +28,6 @@ class MedicationTimingTagSeeder extends Seeder
             return;
         }
 
-        // 薬の名称に含まれるキーワードと、推奨されるタイミングタグのマッピング
-        // 50種類の薬に合わせて具体的な設定を行います。
         $medicationTimingMap = [
             'アムロジピン' => ['朝食後'],
             'メトグルコ' => ['朝食後', '夕食後'],
@@ -91,22 +89,18 @@ class MedicationTimingTagSeeder extends Seeder
             'フルイトラン' => ['起床時'],
             'ロゼレム' => ['寝る前'],
             'タクロリムス' => ['朝食後', '夕食後'],
-            // 必要に応じてさらに追加してください
         ];
 
-        // 各薬に対してタイミングタグを関連付ける
         foreach ($medications as $medication) {
             $assigned = false;
+            $currentMedicationTimingTagIds = []; // この薬に割り当てるタイミングタグIDを一時的に保持
+
             foreach ($medicationTimingMap as $keyword => $suggestedTimings) {
-                // 薬の名称にキーワードが含まれているかチェック
-                // mb_strpos を使用してマルチバイト文字にも対応
                 if (mb_strpos($medication->medication_name, $keyword) !== false) {
                     foreach ($suggestedTimings as $timingName) {
                         $timingTag = $timingTags->get($timingName);
                         if ($timingTag) {
-                            $medication->timingTags()->firstOrCreate([
-                                'timing_tag_id' => $timingTag->timing_tag_id,
-                            ]);
+                            $currentMedicationTimingTagIds[] = $timingTag->timing_tag_id;
                         } else {
                             $this->command->warn("タイミングタグ '{$timingName}' が見つかりません。TimingTagSeeder を確認してください。");
                         }
@@ -115,16 +109,20 @@ class MedicationTimingTagSeeder extends Seeder
                     break;
                 }
             }
-            // もし特定のキーワードにマッチしなかった薬があれば、ランダムに1つ割り当てる
+
+            // もし特定のキーワードにマッチしなかった薬であれば、ランダムに1つ割り当てる
             if (!$assigned) {
                 if ($timingTags->isNotEmpty()) {
                     $randomTimingTag = $timingTags->random();
                     if ($randomTimingTag) {
-                        $medication->timingTags()->firstOrCreate([
-                            'timing_tag_id' => $randomTimingTag->timing_tag_id,
-                        ]);
+                        $currentMedicationTimingTagIds[] = $randomTimingTag->timing_tag_id;
                     }
                 }
+            }
+            // 収集したタイミングタグIDをまとめてアタッチ
+            // syncWithoutDetaching は、指定したIDのみをアタッチし、既存のものはデタッチしない
+            if (!empty($currentMedicationTimingTagIds)) {
+                $medication->timingTags()->syncWithoutDetaching($currentMedicationTimingTagIds);
             }
         }
     }
