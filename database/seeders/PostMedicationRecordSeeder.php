@@ -53,7 +53,7 @@ class PostMedicationRecordSeeder extends Seeder
                                             ->where('medication_id', $medication->medication_id)
                                             ->where('timing_tag_id', $timingTag->timing_tag_id)
                                             ->doesntExist()) {
-                        
+
                         // 服用したかどうかをランダムで決定 (例えば80%の確率で服用したとする)
                         $isCompleted = (rand(1, 100) <= 95);
                         $takenDosage = null;
@@ -68,7 +68,7 @@ class PostMedicationRecordSeeder extends Seeder
 
                             $takenDosage = $baseDosage; // 基本はそのままの量を服用
                             // 少しだけランダムなバリエーションを付けることも可能
-                            // $takenDosage = $baseDosage * rand(1, 2); 
+                            // $takenDosage = $baseDosage * rand(1, 2);
 
                             // 服用日時を、投稿日の午前中から深夜までのランダムな時刻に設定
                             $takenAt = Carbon::parse($post->post_date)
