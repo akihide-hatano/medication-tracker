@@ -55,7 +55,7 @@ class PostMedicationRecordSeeder extends Seeder
                                             ->doesntExist()) {
                         
                         // 服用したかどうかをランダムで決定 (例えば80%の確率で服用したとする)
-                        $isCompleted = (rand(1, 100) <= 80); 
+                        $isCompleted = (rand(1, 100) <= 95);
                         $takenDosage = null;
                         $takenAt = null;
                         $reasonNotTaken = null;
@@ -65,7 +65,7 @@ class PostMedicationRecordSeeder extends Seeder
                             // dosageカラムから数値部分を抽出し、それを参考にランダムな量を設定
                             preg_match('/(\d+)/', $medication->dosage, $matches);
                             $baseDosage = isset($matches[1]) ? (int)$matches[1] : 1; // dosageから数値部分を取得、なければ1
-                            
+
                             $takenDosage = $baseDosage; // 基本はそのままの量を服用
                             // 少しだけランダムなバリエーションを付けることも可能
                             // $takenDosage = $baseDosage * rand(1, 2); 
