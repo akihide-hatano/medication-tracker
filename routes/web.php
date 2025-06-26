@@ -28,9 +28,11 @@ Route::patch('/medications/{medication}', [MedicationController::class, 'update'
 Route::delete('/medications/{medication}', [MedicationController::class, 'destroy'])->name('medications.destroy');
 
 
-// ★★★ここが重要：posts.calendar ルートを resource の前に移動★★★
 Route::get('/posts/calendar', [PostController::class, 'calendar'])->name('posts.calendar');
-Route::resource('posts', PostController::class); // posts.calendar より後に来る
+// 日付ごとの投稿詳細ページ
+Route::get('/posts/date/{date}', [PostController::class, 'showDailyRecords'])->name('posts.daily_records');
+// ★★★ここまで追加する新しいルート★★★
+Route::resource('posts', PostController::class);
 
 
 // 服用タイミングに関するルーティング (TimingTags)
