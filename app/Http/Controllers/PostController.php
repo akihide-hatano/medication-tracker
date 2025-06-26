@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Post;
 use Illuminate\Http\Request;
 
 class PostController extends Controller
@@ -11,7 +12,8 @@ class PostController extends Controller
      */
     public function index()
     {
-        //
+        $posts = Post::with(['user','postMedicationRecords'])->orderBy('post_date','desc')->get();
+        return view('posts.index',compact('posts'));
     }
 
     /**

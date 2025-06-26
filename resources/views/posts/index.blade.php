@@ -66,7 +66,7 @@
                     @endif
 
                     <div class="mt-8 text-center">
-                        <a href="{{ route('home') }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-lg hover:underline transition-colors duration-300">
+                        <a href="" class="text-indigo-600 hover:text-indigo-900 font-semibold text-lg hover:underline transition-colors duration-300">
                             トップページに戻る
                         </a>
                     </div>
