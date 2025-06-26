@@ -45,10 +45,7 @@
         </div>
     </div>
 
-    {{-- Lucide Icons の読み込み --}}
-    {{-- <script src="https://unpkg.com/lucide@latest/dist/lucide.min.js" defer></script> --}}
     <script>
-
         document.addEventListener('DOMContentLoaded', function() {
             const calendarGrid = document.querySelector('.calendar-grid');
             const medicationStatusByDay = @json($medicationStatusByDay);
@@ -69,35 +66,48 @@
             }
 
             for (let day = 1; day <= numDaysInMonth; day++) {
+                // その日の日付文字列を YYYY-MM-DD 形式で作成
+                const dayString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                // 投稿一覧ページへのリンクURLを生成
+                const postListUrl = `{{ route('posts.index') }}?date=${dayString}`;
+
                 const dayCell = document.createElement('div');
-                dayCell.className = 'calendar-cell flex flex-col items-center justify-center p-2 h-20 bg-white rounded-md shadow-sm border border-gray-200';
+                dayCell.className = 'calendar-cell flex flex-col items-center justify-center p-2 h-20 bg-white rounded-md shadow-sm border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors duration-200'; // ホバーエフェクトとカーソルを追加
 
                 const today = new Date();
                 if (year === today.getFullYear() && month === (today.getMonth() + 1) && day === today.getDate()) {
                     dayCell.classList.add('bg-blue-100', 'border-blue-400', 'font-bold');
                 }
 
+                // ★★★ここから修正・追加する部分★★★
+                const cellLink = document.createElement('a');
+                cellLink.href = postListUrl;
+                cellLink.className = 'w-full h-full flex flex-col items-center justify-center no-underline text-current'; // リンクのスタイル調整
+
                 const dayNumber = document.createElement('div');
                 dayNumber.className = 'text-lg font-bold text-gray-800';
                 dayNumber.textContent = day;
-                dayCell.appendChild(dayNumber);
+                cellLink.appendChild(dayNumber);
 
                 const statusIndicator = document.createElement('div');
                 statusIndicator.className = 'text-2xl mt-1';
 
                 if (medicationStatusByDay[day]) {
                     if (medicationStatusByDay[day] === 'completed') {
-                        statusIndicator.innerHTML = '<span class="text-green-500">⚪︎</span>';
+                        statusIndicator.innerHTML = '<span class="text-green-500">⚪︎</span>'; // 後でLucideアイコンに置き換える予定
                         statusIndicator.title = '全て服用済み';
                     } else if (medicationStatusByDay[day] === 'not_completed') {
-                        statusIndicator.innerHTML = '<span class="text-red-500">✕</span>';
+                        statusIndicator.innerHTML = '<span class="text-red-500">✕</span>'; // 後でLucideアイコンに置き換える予定
                         statusIndicator.title = '未完了あり';
                     }
                 } else {
                     statusIndicator.innerHTML = '<span class="text-gray-300">−</span>';
                     statusIndicator.title = '記録なし';
                 }
-                dayCell.appendChild(statusIndicator);
+                cellLink.appendChild(statusIndicator);
+
+                dayCell.appendChild(cellLink); // リンクをセルに追加
+                // ★★★ここまで修正・追加する部分★★★
 
                 calendarGrid.appendChild(dayCell);
             }
