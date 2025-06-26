@@ -280,37 +280,31 @@ class PostController extends Controller
         return view('posts.calendar', compact('date', 'medicationStatusByDay'));
     }
 
-    public function showDailyRecords(string $dateString)
+ public function showDailyRecords(string $dateString)
     {
         try {
-            $date = Carbon::parse($dateString); // 日付文字列をCarbonオブジェクトに変換
+            $date = Carbon::parse($dateString);
         } catch (\Exception $e) {
-            // 無効な日付フォーマットの場合
             return redirect()->route('posts.calendar')->with('error', '無効な日付が指定されました。');
         }
 
-        // 特定のユーザー（例：user_id = 1）のその日の投稿データを取得
-        // 実際のアプリケーションでは Auth::id() を使用するか、ユーザーIDを動的に渡す
-        $userId = 1; // とりあえず user_id が1のユーザーのデータを表示
+        $userId = 1;
 
-        // ユーザーが存在するか確認
         if (!User::where('id', $userId)->exists()) {
-            Log::error("User ID {$userId} not found for daily records display.");
-            return redirect()->route('home')->with('error', '投稿詳細表示に必要なユーザーが見つかりません。');
+             Log::error("User ID {$userId} not found for daily records display.");
+             return redirect()->route('home')->with('error', '投稿詳細表示に必要なユーザーが見つかりません。');
         }
 
-        // その日付の投稿を全て取得し、必要なリレーションをEagerロード
         $posts = Post::with([
             'user',
             'postMedicationRecords.medication',
-            'postMedicationRecords.timingTags' // timingTags のpivot情報も取得
+            'postMedicationRecords.timingTags'
         ])
         ->where('user_id', $userId)
-        ->whereDate('post_date', $date) // 特定の日付で絞り込み
+        ->whereDate('post_date', $date)
         ->orderBy('post_date', 'desc')
         ->get();
 
-        // ビューに渡すデータ
         return view('posts.daily_detail', compact('posts', 'date'));
     }
 
