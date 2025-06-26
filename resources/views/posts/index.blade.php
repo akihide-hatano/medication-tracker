@@ -1,24 +1,20 @@
 <x-app-layout>
-    {{-- $header スロットにページタイトルを渡す --}}
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             投稿一覧
         </h2>
     </x-slot>
 
-    {{-- Page Content (メインコンテンツ) --}}
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    {{-- 成功メッセージの表示 --}}
                     @if (session('success'))
                         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
                             {{ session('success') }}
                         </div>
                     @endif
 
-                    {{-- 新しい投稿を追加するボタン --}}
                     <div class="flex justify-end mb-6">
                         <a href="{{ route('posts.create') }}" class="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-lg font-bold text-sm text-white uppercase tracking-wider shadow-lg hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -37,13 +33,27 @@
                                         {{ $post->post_date->format('Y年m月d日') }}
                                     </h3>
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">ユーザー:</strong> {{ $post->user->name ?? '不明なユーザー' }}</p>
-                                    <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">メモ:</strong> {{ Str::limit($post->notes, 100) ?? 'なし' }}</p>
+                                    <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">メモ:</strong> {{ Str::limit($post->content, 100) ?? 'なし' }}</p> {{-- ★ 'notes' を 'content' に変更済みか確認 --}}
                                     
-                                    {{-- 関連する服用薬の数 --}}
-                                    <p class="text-sm text-gray-700 mb-4 flex items-center">
+                                    <p class="text-sm text-gray-700 mb-2 flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pill mr-2 text-green-600"><path d="m10.5 20.5 9.5-9.5a4.5 4.5 0 0 0-7.5-7.5L3.5 13.5a4.5 4.5 0 0 0 7.5 7.5Z"/><path d="m14 14 3 3"/><path d="m15 6 3-3"/><path d="m2 22 1-1"/><path d="m19 5 1-1"/></svg>
                                         <strong class="text-gray-800">記録された薬の数:</strong> {{ $post->postMedicationRecords->count() }}種類
                                     </p>
+
+                                    {{-- ★ここから追加する部分 ★ --}}
+                                    <p class="text-sm text-gray-700 mb-4 flex items-center">
+                                        @if($post->all_meds_taken)
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle mr-2 text-green-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+                                            <strong class="text-gray-800">内服状況:</strong> <span class="font-bold text-green-700">全て服用済み</span>
+                                        @else
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle mr-2 text-red-500"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                                            <strong class="text-gray-800">内服状況:</strong> <span class="font-bold text-red-700">未完了あり</span>
+                                            @if($post->reason_not_taken)
+                                                <span class="ml-2 text-xs text-gray-600">(理由: {{ Str::limit($post->reason_not_taken, 50) }})</span>
+                                            @endif
+                                        @endif
+                                    </p>
+                                    {{-- ★ここまで追加する部分 ★ --}}
 
                                     <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-300">
                                         <a href="{{ route('posts.show', $post->post_id) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
@@ -66,7 +76,7 @@
                     @endif
 
                     <div class="mt-8 text-center">
-                        <a href="" class="text-indigo-600 hover:text-indigo-900 font-semibold text-lg hover:underline transition-colors duration-300">
+                        <a href="{{}}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-lg hover:underline transition-colors duration-300">
                             トップページに戻る
                         </a>
                     </div>
@@ -75,7 +85,6 @@
         </div>
     </div>
 
-    {{-- Lucide Icons の読み込み (body の閉じタグの直前、または head 内) --}}
     <script src="https://unpkg.com/lucide@latest/dist/lucide.min.js"></script>
     <script>
         lucide.createIcons();
