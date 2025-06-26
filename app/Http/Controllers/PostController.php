@@ -261,14 +261,14 @@ class PostController extends Controller
 
         $userExists = User::where('id', $userId)->exists();
         if (!$userExists) {
-             Log::error("User ID {$userId} not found for calendar display.");
-             return redirect()->route('home')->with('error', 'カレンダー表示に必要なユーザーが見つかりません。');
+            Log::error("User ID {$userId} not found for calendar display.");
+            return redirect()->route('home')->with('error', 'カレンダー表示に必要なユーザーが見つかりません。');
         }
 
         $posts = Post::where('user_id', $userId)
-                     ->whereMonth('post_date', $month)
-                     ->whereYear('post_date', $year)
-                     ->get();
+                    ->whereMonth('post_date', $month)
+                    ->whereYear('post_date', $year)
+                    ->get();
 
         $medicationStatusByDay = [];
         foreach ($posts as $post) {
@@ -279,4 +279,39 @@ class PostController extends Controller
         // ビューに渡すデータ
         return view('posts.calendar', compact('date', 'medicationStatusByDay'));
     }
+
+    public function showDailyRecords(string $dateString)
+    {
+        try {
+            $date = Carbon::parse($dateString); // 日付文字列をCarbonオブジェクトに変換
+        } catch (\Exception $e) {
+            // 無効な日付フォーマットの場合
+            return redirect()->route('posts.calendar')->with('error', '無効な日付が指定されました。');
+        }
+
+        // 特定のユーザー（例：user_id = 1）のその日の投稿データを取得
+        // 実際のアプリケーションでは Auth::id() を使用するか、ユーザーIDを動的に渡す
+        $userId = 1; // とりあえず user_id が1のユーザーのデータを表示
+
+        // ユーザーが存在するか確認
+        if (!User::where('id', $userId)->exists()) {
+            Log::error("User ID {$userId} not found for daily records display.");
+            return redirect()->route('home')->with('error', '投稿詳細表示に必要なユーザーが見つかりません。');
+        }
+
+        // その日付の投稿を全て取得し、必要なリレーションをEagerロード
+        $posts = Post::with([
+            'user',
+            'postMedicationRecords.medication',
+            'postMedicationRecords.timingTags' // timingTags のpivot情報も取得
+        ])
+        ->where('user_id', $userId)
+        ->whereDate('post_date', $date) // 特定の日付で絞り込み
+        ->orderBy('post_date', 'desc')
+        ->get();
+
+        // ビューに渡すデータ
+        return view('posts.daily_detail', compact('posts', 'date'));
+    }
+
 }
