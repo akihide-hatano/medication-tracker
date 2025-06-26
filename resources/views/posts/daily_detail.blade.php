@@ -36,7 +36,7 @@
                                         <strong class="text-gray-800">記録された薬の数:</strong> {{ $post->postMedicationRecords->count() }}種類
                                     </p>
 
-                                    {{-- ★★★内服薬と服用タイミングの記録詳細★★★ --}}
+                                    {{-- 内服薬と服用タイミングの記録詳細 --}}
                                     @if ($post->postMedicationRecords->isNotEmpty())
                                         <div class="mb-4 text-sm bg-blue-100 p-3 rounded-md border border-blue-200">
                                             <strong class="text-gray-800 flex items-center mb-2">
@@ -46,17 +46,20 @@
                                             <ul class="space-y-2">
                                                 @foreach ($post->postMedicationRecords as $record)
                                                     <li class="p-2 rounded-md bg-white border border-gray-200 shadow-sm">
-                                                        <span class="font-bold text-blue-800 block mb-1">{{ $record->medication->medication_name ?? '不明な薬' }}</span>
+                                                        {{-- ★★★ここを修正：medications.show にリンクする★★★ --}}
+                                                        <a href="{{ route('medications.show', $record->medication->medication_id) }}" class="font-bold text-blue-800 block mb-1 hover:underline cursor-pointer">
+                                                            {{ $record->medication->medication_name ?? '不明な薬' }}
+                                                        </a>
+                                                        {{-- ★★★ここまで修正★★★ --}}
                                                         <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                                            {{-- ★★★ここを修正：timingTags ではなく timingTag にアクセス★★★ --}}
-                                                            @if ($record->timingTag) {{-- timingTag リレーションが存在するか確認 --}}
+                                                            @if ($record->timingTag)
                                                                 <span class="inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full
-                                                                    @if ($record->is_completed) {{-- is_completed は record オブジェクトに直接あります --}}
-                                                                        bg-green-200 text-green-800
-                                                                    @else
-                                                                        bg-red-200 text-red-800
-                                                                    @endif">
-                                                                    {{ $record->timingTag->timing_name }} {{-- timingTag の名前を表示 --}}
+                                                                        @if ($record->is_completed)
+                                                                            bg-green-200 text-green-800
+                                                                        @else
+                                                                            bg-red-200 text-red-800
+                                                                        @endif">
+                                                                    {{ $record->timingTag->timing_name ?? '不明なタイミング' }}
                                                                     @if ($record->is_completed)
                                                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check ml-1"><path d="M20 6 9 17l-5-5"/></svg>
                                                                     @else
@@ -66,8 +69,13 @@
                                                             @else
                                                                 <span class="text-gray-500 text-xs">(服用タイミングの記録なし)</span>
                                                             @endif
-                                                            {{-- ★★★ここまで修正★★★ --}}
                                                         </div>
+                                                        {{-- その他の詳細情報があればここに追加 --}}
+                                                        <p class="text-xs text-gray-600 mt-1">服用量: {{ $record->taken_dosage ?? '未記録' }}</p>
+                                                        <p class="text-xs text-gray-600">服用時刻: {{ $record->taken_at ? Carbon\Carbon::parse($record->taken_at)->format('H:i') : '未記録' }}</p>
+                                                        @if ($record->reason_not_taken)
+                                                            <p class="text-xs text-gray-600">服用しなかった理由: {{ $record->reason_not_taken }}</p>
+                                                        @endif
                                                     </li>
                                                 @endforeach
                                             </ul>

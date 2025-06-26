@@ -26,15 +26,20 @@ Route::put('/medications/{medication}', [MedicationController::class, 'update'])
 Route::patch('/medications/{medication}', [MedicationController::class, 'update']);
 Route::delete('/medications/{medication}', [MedicationController::class, 'destroy'])->name('medications.destroy');
 
-// posts.calendar ルートは resource の前に来る
+// ★★★ここが最も重要です：固定パス、またはより具体的なパスをresourceより先に定義する★★★
+
+// カレンダー表示 (posts/calendar)
 Route::get('/posts/calendar', [PostController::class, 'calendar'])->name('posts.calendar');
-// 日付ごとの投稿詳細ページ
+
+// 日付ごとの投稿詳細ページ (posts/date/{date})
 Route::get('/posts/date/{date}', [PostController::class, 'showDailyRecords'])->name('posts.daily_records');
 
+// postsリソースルート（posts/{post} のような汎用的なパスを含むため、上記より後に来る）
 Route::resource('posts', PostController::class);
 
 // 服用タイミングに関するルーティング (TimingTags)
 Route::resource('timing_tags',TimingTagController::class);
+
 
 // Laravel Breeze関連のルーティング
 Route::get('/dashboard', function () {
