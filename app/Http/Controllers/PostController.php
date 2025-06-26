@@ -6,7 +6,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Models\Medication;
 use App\Models\TimingTag;
-use Illuminate\Http\Request; // Request クラスを忘れずにインポート
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -15,103 +15,264 @@ use Carbon\Carbon;
 class PostController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * 投稿の一覧ページを表示
+     * GET /posts
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Contracts\View\View
      */
     public function index(Request $request)
     {
-// クエリビルダーの初期化
         $query = Post::with(['user', 'postMedicationRecords.medication', 'timingTags'])
                      ->orderBy('post_date', 'desc');
 
-        // フィルターパラメータをチェック
         if ($request->has('filter')) {
             $filter = $request->input('filter');
-
             if ($filter === 'not_completed') {
                 $query->where('all_meds_taken', false);
-                // もし reason_not_taken が空でないものも絞り込むなら追加
-                // $query->whereNotNull('reason_not_taken')->where('reason_not_taken', '!=', '');
             }
-            // 将来的に他のフィルターを追加する場合、ここにelse ifで追加
         }
-
         $posts = $query->get();
-
         return view('posts.index', compact('posts'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * 新しい投稿の作成フォームを表示
+     * GET /posts/create
+     *
+     * @return \Illuminate\Contracts\View\View
      */
     public function create()
     {
-        //
+        $medications = Medication::all();
+        $timingTags = TimingTag::all();
+        return view('posts.create', compact('medications', 'timingTags'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * 新しい投稿をデータベースに保存
+     * POST /posts
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
-        //
+        $validatedData = $request->validate([
+            'post_date' => 'required|date',
+            'all_meds_taken' => 'boolean',
+            'reason_not_taken' => 'nullable|string|max:500',
+            'content' => 'nullable|string|max:1000',
+            'medications' => 'nullable|array',
+            'medications.*.medication_id' => 'required_with:medications|exists:medications,medication_id',
+            'medications.*.timing_tags' => 'nullable|array',
+            'medications.*.timing_tags.*.timing_tag_id' => 'required_with:medications.*.timing_tags|exists:timing_tags,timing_tag_id',
+            'medications.*.timing_tags.*.is_completed' => 'boolean',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $post = Post::create([
+                'user_id' => Auth::id(),
+                'post_date' => $validatedData['post_date'],
+                'all_meds_taken' => $request->has('all_meds_taken'),
+                'reason_not_taken' => $validatedData['reason_not_taken'] ?? null,
+                'content' => $validatedData['content'] ?? null,
+            ]);
+
+            if (isset($validatedData['medications'])) {
+                foreach ($validatedData['medications'] as $medicationData) {
+                    $medicationId = $medicationData['medication_id'];
+                    $postMedicationRecord = $post->postMedicationRecords()->create([
+                        'medication_id' => $medicationId,
+                        'is_completed' => false, // フォームで扱っていないため、一旦false
+                    ]);
+
+                    if (isset($medicationData['timing_tags'])) {
+                        $pivotData = [];
+                        foreach ($medicationData['timing_tags'] as $timingTagData) {
+                            $timingTagId = $timingTagData['timing_tag_id'];
+                            $isCompleted = isset($timingTagData['is_completed']) ? (bool)$timingTagData['is_completed'] : false;
+                            $pivotData[$timingTagId] = ['is_completed' => $isCompleted];
+                        }
+                        $postMedicationRecord->timingTags()->attach($pivotData);
+                    }
+                }
+            }
+            DB::commit();
+            return redirect()->route('posts.index')->with('success', '投稿が正常に作成されました！');
+        } catch (\Exception | \Throwable $e) { // Throwable を追加してより広範囲なエラーをキャッチ
+            DB::rollBack();
+            Log::error('投稿作成エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString()); // スタックトレースも出力
+            return redirect()->back()->withInput()->with('error', '投稿の作成中にエラーが発生しました。もう一度お試しください。');
+        }
     }
 
     /**
-     * Display the specified resource.
+     * 特定の投稿の詳細を表示
+     * GET /posts/{post}
+     *
+     * @param  \App\Models\Post  $post
+     * @return \Illuminate\Contracts\View\View
      */
-    public function show(string $id)
+    public function show(Post $post)
     {
-        //
+        $post->load(['user', 'postMedicationRecords.medication', 'timingTags']);
+        return view('posts.show', compact('post'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * 特定の投稿の編集フォームを表示
+     * GET /posts/{post}/edit
+     *
+     * @param  \App\Models\Post  $post
+     * @return \Illuminate\Contracts\View\View
      */
-    public function edit(string $id)
+    public function edit(Post $post)
     {
-        //
+        $medications = Medication::all();
+        $timingTags = TimingTag::all();
+
+        $selectedMedications = $post->postMedicationRecords->mapWithKeys(function ($pmr) {
+            return [
+                $pmr->medication_id => [
+                    'id' => $pmr->medication_id,
+                    'name' => $pmr->medication->medication_name,
+                    'timing_tags' => $pmr->timingTags->mapWithKeys(function ($tag) {
+                        return [
+                            $tag->timing_tag_id => [
+                                'id' => $tag->timing_tag_id,
+                                'name' => $tag->timing_name,
+                                'is_completed' => $tag->pivot->is_completed,
+                            ]
+                        ];
+                    })->toArray(),
+                ]
+            ];
+        })->toArray();
+
+        return view('posts.edit', compact('post', 'medications', 'timingTags', 'selectedMedications'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * 特定の投稿をデータベースで更新
+     * PUT/PATCH /posts/{post}
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Post  $post
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Post $post)
     {
-        //
+        $validatedData = $request->validate([
+            'post_date' => 'required|date',
+            'all_meds_taken' => 'boolean',
+            'reason_not_taken' => 'nullable|string|max:500',
+            'content' => 'nullable|string|max:1000',
+            'medications' => 'nullable|array',
+            'medications.*.medication_id' => 'required_with:medications|exists:medications,medication_id',
+            'medications.*.timing_tags' => 'nullable|array',
+            'medications.*.timing_tags.*.timing_tag_id' => 'required_with:medications.*.timing_tags|exists:timing_tags,timing_tag_id',
+            'medications.*.timing_tags.*.is_completed' => 'boolean',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $post->update([
+                'post_date' => $validatedData['post_date'],
+                'all_meds_taken' => $request->has('all_meds_taken'),
+                'reason_not_taken' => $validatedData['reason_not_taken'] ?? null,
+                'content' => $validatedData['content'] ?? null,
+            ]);
+
+            // 既存の関連レコードを全て削除してから再作成
+            foreach ($post->postMedicationRecords as $pmr) {
+                $pmr->timingTags()->detach();
+                $pmr->delete();
+            }
+
+            if (isset($validatedData['medications'])) {
+                foreach ($validatedData['medications'] as $medicationData) {
+                    $medicationId = $medicationData['medication_id'];
+                    $postMedicationRecord = $post->postMedicationRecords()->create([
+                        'medication_id' => $medicationId,
+                        'is_completed' => false,
+                    ]);
+
+                    if (isset($medicationData['timing_tags'])) {
+                        $pivotData = [];
+                        foreach ($medicationData['timing_tags'] as $timingTagData) {
+                            $timingTagId = $timingTagData['timing_tag_id'];
+                            $isCompleted = isset($timingTagData['is_completed']) ? (bool)$timingTagData['is_completed'] : false;
+                            $pivotData[$timingTagId] = ['is_completed' => $isCompleted];
+                        }
+                        $postMedicationRecord->timingTags()->attach($pivotData);
+                    }
+                }
+            }
+            DB::commit();
+            return redirect()->route('posts.show', $post->post_id)->with('success', '投稿が正常に更新されました！');
+        } catch (\Exception | \Throwable $e) { // Throwable を追加
+            DB::rollBack();
+            Log::error('投稿更新エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return redirect()->back()->withInput()->with('error', '投稿の更新中にエラーが発生しました。もう一度お試しください。');
+        }
     }
 
     /**
-     * Remove the specified resource from storage.
+     * 特定の投稿をデータベースから削除
+     * DELETE /posts/{post}
+     *
+     * @param  \App\Models\Post  $post
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function destroy(string $id)
+    public function destroy(Post $post)
     {
-        //
+        DB::beginTransaction();
+        try {
+            foreach ($post->postMedicationRecords as $pmr) {
+                $pmr->timingTags()->detach();
+                $pmr->delete();
+            }
+            $post->delete();
+            DB::commit();
+            return redirect()->route('posts.index')->with('success', '投稿が正常に削除されました！');
+        } catch (\Exception | \Throwable $e) { // Throwable を追加
+            DB::rollBack();
+            Log::error('投稿削除エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return redirect()->back()->with('error', '投稿の削除中にエラーが発生しました。もう一度お試しください。');
+        }
     }
 
-     public function calendar(Request $request)
+    /**
+     * 服薬状況をカレンダー形式で表示
+     * GET /posts/calendar
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Contracts\View\View
+     */
+ public function calendar(Request $request)
     {
-        // カレンダー表示の基準となる年月を取得
-        // デフォルトは現在月
         $year = $request->input('year', Carbon::now()->year);
         $month = $request->input('month', Carbon::now()->month);
-
         $date = Carbon::createFromDate($year, $month, 1);
 
-        // 特定のユーザー（例：user_id = 1）のその月の投稿データを取得
-        // 実際のアプリケーションでは Auth::id() を使用するか、ユーザーIDを動的に渡す
-        $userId = 1; // とりあえず user_id が1のユーザーのデータを表示
-        // $userId = Auth::id(); // 認証機能があればこちらを使う
+        $userId = 1;
+
+        $userExists = User::where('id', $userId)->exists();
+        if (!$userExists) {
+             Log::error("User ID {$userId} not found for calendar display.");
+             return redirect()->route('home')->with('error', 'カレンダー表示に必要なユーザーが見つかりません。');
+        }
 
         $posts = Post::where('user_id', $userId)
                      ->whereMonth('post_date', $month)
                      ->whereYear('post_date', $year)
                      ->get();
 
-        // カレンダー表示用に、日付ごとの服薬状況を連想配列にまとめる
         $medicationStatusByDay = [];
         foreach ($posts as $post) {
             $day = Carbon::parse($post->post_date)->day;
-            // all_meds_taken が true なら 'completed'、false なら 'not_completed'
             $medicationStatusByDay[$day] = $post->all_meds_taken ? 'completed' : 'not_completed';
         }
 
