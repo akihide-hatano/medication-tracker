@@ -35,6 +35,10 @@ Route::delete('/medications/{medication}', [MedicationController::class, 'destro
 
 Route::resource('posts',PostController::class);
 
+// ★★★ここから追加★★★
+Route::get('/posts/calendar', [PostController::class, 'calendar'])->name('posts.calendar');
+// ★★★ここまで追加★★★
+
 Route::resource('timing_tags',TimingTagController::class);
 
 
