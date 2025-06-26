@@ -252,32 +252,58 @@ class PostController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Contracts\View\View
      */
- public function calendar(Request $request)
+    public function calendar(Request $request)
     {
         $year = $request->input('year', Carbon::now()->year);
         $month = $request->input('month', Carbon::now()->month);
         $date = Carbon::createFromDate($year, $month, 1);
 
-        $userId = 1;
+        $userId = 1; // とりあえず user_id が1のユーザーのデータを表示
 
         $userExists = User::where('id', $userId)->exists();
         if (!$userExists) {
-            Log::error("User ID {$userId} not found for calendar display.");
-            return redirect()->route('home')->with('error', 'カレンダー表示に必要なユーザーが見つかりません。');
+             Log::error("User ID {$userId} not found for calendar display.");
+             return redirect()->route('home')->with('error', 'カレンダー表示に必要なユーザーが見つかりません。');
         }
 
-        $posts = Post::where('user_id', $userId)
-                    ->whereMonth('post_date', $month)
-                    ->whereYear('post_date', $year)
-                    ->get();
+        // postMedicationRecords.medication と postMedicationRecords.timingTag を eager load する
+        // ★ここを修正しました：PostMedicationRecordsのrelationもloadしてmedicationとtimingTagを取るように
+        $posts = Post::with(['postMedicationRecords.medication', 'postMedicationRecords.timingTag'])
+                     ->where('user_id', $userId)
+                     ->whereMonth('post_date', $month)
+                     ->whereYear('post_date', $year)
+                     ->get();
 
+        // ★★★ここを修正：medicationStatusByDay の構造を JavaScript が期待するオブジェクト形式に戻す★★★
         $medicationStatusByDay = [];
         foreach ($posts as $post) {
             $day = Carbon::parse($post->post_date)->day;
-            $medicationStatusByDay[$day] = $post->all_meds_taken ? 'completed' : 'not_completed';
-        }
+            
+            $status = $post->all_meds_taken ? 'completed' : 'not_completed';
+            $details = [
+                'status' => $status
+            ];
 
-        // ビューに渡すデータ
+            if ($post->all_meds_taken) {
+                // 服用完了の場合、関連する薬の名前のリストを取得
+                // 薬の名前は PostMedicationRecord ごとに TimingTag も含めて取得する形にするため、少しロジックを変更
+                $medicationInfo = [];
+                foreach ($post->postMedicationRecords as $record) {
+                    $medName = $record->medication->medication_name ?? '不明な薬';
+                    $timingName = $record->timingTag->timing_name ?? 'タイミングなし';
+                    $isCompleted = $record->is_completed ? '完了' : '未完了';
+                    $medicationInfo[] = "{$medName} ({$timingName}: {$isCompleted})";
+                }
+                $details['medications'] = $medicationInfo; // 全て服用済みの日には全薬の完了状況を詳細に表示
+            } else {
+                // 服用未完了の場合、理由を取得
+                $details['reason'] = $post->reason_not_taken;
+                // 未完了の場合も薬の情報を簡潔に表示したい場合はここに追加
+            }
+            $medicationStatusByDay[$day] = $details;
+        }
+        // ★★★ここまで修正★★★
+
         return view('posts.calendar', compact('date', 'medicationStatusByDay'));
     }
 
