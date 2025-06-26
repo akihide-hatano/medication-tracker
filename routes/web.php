@@ -25,9 +25,6 @@ Route::get('/medications/{medication}/edit', [MedicationController::class, 'edit
 Route::put('/medications/{medication}', [MedicationController::class, 'update'])->name('medications.update');
 Route::patch('/medications/{medication}', [MedicationController::class, 'update']);
 Route::delete('/medications/{medication}', [MedicationController::class, 'destroy'])->name('medications.destroy');
-
-// ★★★ここが最も重要です：固定パス、またはより具体的なパスをresourceより先に定義する★★★
-
 // カレンダー表示 (posts/calendar)
 Route::get('/posts/calendar', [PostController::class, 'calendar'])->name('posts.calendar');
 
