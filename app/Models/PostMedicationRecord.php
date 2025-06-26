@@ -19,8 +19,8 @@ class PostMedicationRecord extends Model
     protected $fillable = [
         'post_id',
         'medication_id',
-        'timing_tag_id',
-        'is_completed',
+        'timing_tag_id', // ★これがテーブルに直接存在するため、fillableに残す
+        'is_completed',  // ★これがテーブルに直接存在するため、fillableに残す
         'taken_dosage',
         'taken_at',
         'reason_not_taken',
@@ -33,7 +33,6 @@ class PostMedicationRecord extends Model
      */
     public function post()
     {
-        // belongsTo(関連モデル, 外部キー, 親モデルの主キー)
         return $this->belongsTo(Post::class, 'post_id', 'post_id');
     }
 
@@ -43,17 +42,16 @@ class PostMedicationRecord extends Model
      */
     public function medication()
     {
-        // belongsTo(関連モデル, 外部キー, 親モデルの主キー)
         return $this->belongsTo(Medication::class, 'medication_id', 'medication_id');
     }
 
+    // ★★★ここを修正：一対多のリレーションシップ 'timingTag' を定義★★★
     /**
-     * この服用記録が関連する服用タイミング（TimingTag）を取得します。
+     * この服用記録が関連する単一の服用タイミング（TimingTag）を取得します。
      * 一対多（TimingTagが親、PostMedicationRecordが子）のリレーションシップです。
      */
-    public function timingTag()
+    public function timingTag() // ★単数形 'timingTag' に戻す
     {
-        // belongsTo(関連モデル, 外部キー, 親モデルの主キー)
         return $this->belongsTo(TimingTag::class, 'timing_tag_id', 'timing_tag_id');
     }
 }

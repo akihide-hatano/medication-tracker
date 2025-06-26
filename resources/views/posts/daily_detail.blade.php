@@ -48,25 +48,25 @@
                                                     <li class="p-2 rounded-md bg-white border border-gray-200 shadow-sm">
                                                         <span class="font-bold text-blue-800 block mb-1">{{ $record->medication->medication_name ?? '不明な薬' }}</span>
                                                         <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                                            @if ($record->timingTags->isEmpty())
-                                                                <span class="text-gray-500 text-xs">(服用タイミングの記録なし)</span>
+                                                            {{-- ★★★ここを修正：timingTags ではなく timingTag にアクセス★★★ --}}
+                                                            @if ($record->timingTag) {{-- timingTag リレーションが存在するか確認 --}}
+                                                                <span class="inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full
+                                                                    @if ($record->is_completed) {{-- is_completed は record オブジェクトに直接あります --}}
+                                                                        bg-green-200 text-green-800
+                                                                    @else
+                                                                        bg-red-200 text-red-800
+                                                                    @endif">
+                                                                    {{ $record->timingTag->timing_name }} {{-- timingTag の名前を表示 --}}
+                                                                    @if ($record->is_completed)
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check ml-1"><path d="M20 6 9 17l-5-5"/></svg>
+                                                                    @else
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x ml-1"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                                                    @endif
+                                                                </span>
                                                             @else
-                                                                @foreach ($record->timingTags as $timingTag)
-                                                                    <span class="inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full
-                                                                        @if ($timingTag->pivot->is_completed)
-                                                                            bg-green-200 text-green-800
-                                                                        @else
-                                                                            bg-red-200 text-red-800
-                                                                        @endif">
-                                                                        {{ $timingTag->timing_name }}
-                                                                        @if ($timingTag->pivot->is_completed)
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check ml-1"><path d="M20 6 9 17l-5-5"/></svg>
-                                                                        @else
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x ml-1"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                                                                        @endif
-                                                                    </span>
-                                                                @endforeach
+                                                                <span class="text-gray-500 text-xs">(服用タイミングの記録なし)</span>
                                                             @endif
+                                                            {{-- ★★★ここまで修正★★★ --}}
                                                         </div>
                                                     </li>
                                                 @endforeach

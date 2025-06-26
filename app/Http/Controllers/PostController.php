@@ -23,8 +23,9 @@ class PostController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Post::with(['user', 'postMedicationRecords.medication', 'timingTags'])
-                     ->orderBy('post_date', 'desc');
+        // ★★★ここを修正：timingTags から timingTag に変更★★★
+        $query = Post::with(['user', 'postMedicationRecords.medication', 'postMedicationRecords.timingTag'])
+                    ->orderBy('post_date', 'desc');
 
         if ($request->has('filter')) {
             $filter = $request->input('filter');
@@ -282,7 +283,7 @@ class PostController extends Controller
 
  public function showDailyRecords(string $dateString)
     {
-        try {
+    try {
             $date = Carbon::parse($dateString);
         } catch (\Exception $e) {
             return redirect()->route('posts.calendar')->with('error', '無効な日付が指定されました。');
@@ -295,10 +296,11 @@ class PostController extends Controller
              return redirect()->route('home')->with('error', '投稿詳細表示に必要なユーザーが見つかりません。');
         }
 
+        // ★★★ここを修正：timingTags から timingTag に変更★★★
         $posts = Post::with([
             'user',
             'postMedicationRecords.medication',
-            'postMedicationRecords.timingTags'
+            'postMedicationRecords.timingTag' // timingTag (単数形) をロード
         ])
         ->where('user_id', $userId)
         ->whereDate('post_date', $date)
@@ -306,6 +308,5 @@ class PostController extends Controller
         ->get();
 
         return view('posts.daily_detail', compact('posts', 'date'));
-    }
-
+        }
 }
