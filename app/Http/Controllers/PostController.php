@@ -127,24 +127,23 @@ class PostController extends Controller
         $medications = Medication::all();
         $timingTags = TimingTag::all();
 
+                // ★★★ここを修正します★★★
+        // PostMedicationRecord が単一の TimingTag に属するように変更
         $selectedMedications = $post->postMedicationRecords->mapWithKeys(function ($pmr) {
+            // PostMedicationRecordにtimingTagリレーションが存在し、それがTimingTagモデルを返すことを想定
+            $timingTag = $pmr->timingTag; // 単数形のリレーション名を使用
+
             return [
+                // medication_id をキーにする
                 $pmr->medication_id => [
                     'id' => $pmr->medication_id,
                     'name' => $pmr->medication->medication_name,
-                    'timing_tags' => $pmr->timingTags->mapWithKeys(function ($tag) {
-                        return [
-                            $tag->timing_tag_id => [
-                                'id' => $tag->timing_tag_id,
-                                'name' => $tag->timing_name,
-                                'is_completed' => $tag->pivot->is_completed,
-                            ]
-                        ];
-                    })->toArray(),
+                    'timing_tag_id' => $pmr->timing_tag_id, // PostMedicationRecord から直接 timing_tag_id を取得
+                    'timing_name' => $timingTag ? $timingTag->timing_name : '不明', // timingTag が存在する場合のみ名前を取得
+                    'is_completed' => (bool)$pmr->is_completed, // PostMedicationRecord から直接 is_completed を取得
                 ]
             ];
         })->toArray();
-
         return view('posts.edit', compact('post', 'medications', 'timingTags', 'selectedMedications'));
     }
 
