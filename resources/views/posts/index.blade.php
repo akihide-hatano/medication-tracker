@@ -50,14 +50,12 @@
                                     }
                                 @endphp
                                 <div class="{{ $cardClasses }}">
-                                {{-- ★★★ここまで修正★★★ --}}
                                     <h3 class="text-2xl font-extrabold {{ $post->all_meds_taken ? 'text-blue-800' : 'text-red-800' }} mb-4 flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days mr-3 {{ $post->all_meds_taken ? 'text-blue-600' : 'text-red-600' }}"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
                                         {{ $post->post_date->format('Y年m月d日') }}
                                     </h3>
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">ユーザー:</strong> {{ $post->user->name ?? '不明なユーザー' }}</p>
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">メモ:</strong> {{ Str::limit($post->content, 100) ?? 'なし' }}</p>
-                                    
                                     <p class="text-sm text-gray-700 mb-2 flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pill mr-2 {{ $post->all_meds_taken ? 'text-blue-600' : 'text-red-600' }}"><path d="m10.5 20.5 9.5-9.5a4.5 4.5 0 0 0-7.5-7.5L3.5 13.5a4.5 4.5 0 0 0 7.5 7.5Z"/><path d="m14 14 3 3"/><path d="m15 6 3-3"/><path d="m2 22 1-1"/><path d="m19 5 1-1"/></svg>
                                         <strong class="text-gray-800">記録された薬の数:</strong> {{ $post->postMedicationRecords->count() }}種類
@@ -106,7 +104,6 @@
         </div>
     </div>
 
-    {{-- Lucide Icons の読み込み (body の閉じタグの直前、または head 内) --}}
     <script src="https://unpkg.com/lucide@latest/dist/lucide.min.js"></script>
     <script>
         lucide.createIcons();
