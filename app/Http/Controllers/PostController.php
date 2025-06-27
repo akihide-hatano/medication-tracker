@@ -59,43 +59,32 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        // ★★★修正: all_meds_taken と is_completed のバリデーションを nullable に変更★★★
-        // (hidden input と value="0" があるので、理論的には required|boolean で問題ないはずですが、
-        //  もし dd() が表示されないなら、これが原因の可能性があります)
-        $rules = [
-            'post_date' => 'required|date',
-            'content' => 'nullable|string|max:1000',
-            'all_meds_taken' => 'nullable|boolean', // required から nullable に変更
-            'reason_not_taken' => 'nullable|string|max:500',
-            'medications' => 'required|array|min:1',
-            'medications.*.medication_id' => 'required|exists:medications,medication_id',
-            'medications.*.timing_tag_id' => 'required|exists:timing_tags,timing_tag_id',
-            'medications.*.is_completed' => 'nullable|boolean', // required から nullable に変更
-        ];
-
-        // all_meds_taken が false の場合のみ reason_not_taken を必須にする
-        // ここでは `$request->input()` を使うため、nullable|boolean にしても機能するはず
-        if (!$request->input('all_meds_taken')) {
-            $rules['reason_not_taken'] = 'required|string|max:500';
-        }
-
-        // ★★★重要: バリデーション前に生のリクエストデータを確認します★★★
-        // dd($request->all()); // この行を有効にする
+        // バリデーションルールを直接 $request->validate() に記述
+        $validatedData = $request->validate([
+            'post_date' => ['required', 'date'],
+            'content' => ['nullable', 'string', 'max:1000'],
+            // all_meds_taken が '0' (false) の場合に reason_not_taken を必須にする
+            // それ以外の場合は nullable
+            'all_meds_taken' => ['required', 'boolean'],
+            'reason_not_taken' => ['nullable', 'string', 'max:500', 'required_if:all_meds_taken,0'],
+            'medications' => ['required', 'array', 'min:1'],
+            'medications.*.medication_id' => ['required', 'exists:medications,medication_id'],
+            'medications.*.timing_tag_id' => ['required', 'exists:timing_tags,timing_tag_id'],
+            'medications.*.is_completed' => ['required', 'boolean'],
+        ]);
 
         try {
-            // dd() でデータを確認した後、この $request->validate($rules); を有効に戻してください。
-            $validatedData = $request->validate($rules);
-
             DB::beginTransaction();
 
             $post = new Post();
-            $post->user_id = Auth::id();
-            $post->post_date = $validatedData['post_date']; // dd($request->all()) が有効な間はコメントアウト
-            $post->content = $validatedData['content'] ?? null; // dd($request->all()) が有効な間はコメントアウト
-            $post->all_meds_taken = $validatedData['all_meds_taken']; // dd($request->all()) が有効な間はコメントアウト
-            $post->reason_not_taken = $validatedData['reason_not_taken'] ?? null; // dd($request->all()) が有効な間はコメントアウト
+            $post->user_id = Auth::id(); // 認証ユーザーのIDをセット
+            $post->post_date = $validatedData['post_date'];
+            $post->content = $validatedData['content'] ?? null;
+            $post->all_meds_taken = $validatedData['all_meds_taken'];
+            $post->reason_not_taken = $validatedData['reason_not_taken'] ?? null;
             $post->save();
 
+            // medicationRecords をループして保存
             foreach ($validatedData['medications'] as $medicationRecord) {
                 $post->postMedicationRecords()->create([
                     'medication_id' => $medicationRecord['medication_id'],
@@ -105,10 +94,10 @@ class PostController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('posts.index')->with('success', '新しい投稿が正常に作成されました。');
-        } catch (\Exception | \Throwable $e) {
+            return redirect()->route('posts.index')->with('success', '新しい投稿が正常に作成されました！');
+        } catch (\Exception | \Throwable $e) { // 広範囲なエラーをキャッチ
             DB::rollBack();
-            Log::error('投稿作成エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            Log::error('投稿作成エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString()); // スタックトレースも出力
             return redirect()->back()->withInput()->with('error', '投稿の作成中にエラーが発生しました。もう一度お試しください。');
         }
     }
