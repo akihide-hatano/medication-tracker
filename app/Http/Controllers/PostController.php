@@ -109,13 +109,11 @@ class PostController extends Controller
      * @param  \App\Models\Post  $post
      * @return \Illuminate\Contracts\View\View
      */
-    public function show(Post $post)
+public function show(Post $post)
     {
         // リレーションシップを eager load
         $post->load(['user', 'postMedicationRecords.medication', 'postMedicationRecords.timingTag']);
-
-        // 全てのPostMedicationRecordをタイミングタグIDと薬の名前でソート
-        // これをコントローラーでソートしておくことで、ビューでの処理がシンプルになる
+        // 1. 全てのPostMedicationRecordをタイミングタグIDと薬の名前でソート
         $sortedMedicationRecords = $post->postMedicationRecords->sortBy(function($record) {
             $timingId = $record->timingTag ? $record->timingTag->timing_tag_id : PHP_INT_MAX;
             $medName = $record->medication ? $record->medication->medication_name : '';
@@ -123,12 +121,15 @@ class PostController extends Controller
             return sprintf('%010d%s', $timingId, $medName);
         })->values(); // ソート後にコレクションのインデックスをリセット
 
-        // 全ての服用タイミングタグを表示順で取得
-        // timing_tag_id が表示順を兼ねていると仮定します。
-        // もしTimingTagモデルに別途display_orderなどのカラムがあれば、それを使うべきです。
+        // 2. ソートされた記録をタイミングタグIDでグループ化
+        // ここでコレクションのgroupByメソッドを利用
+        $groupedMedicationRecords = $sortedMedicationRecords->groupBy('timing_tag_id');
+
+        // 3. 全ての服用タイミングタグを表示順で取得（グループの表示順を制御するため）
         $timingTags = TimingTag::orderBy('timing_tag_id')->get();
 
-        return view('posts.show', compact('post', 'sortedMedicationRecords', 'timingTags'));
+        // ビューには、グループ化されたデータと、表示順のタイミングタグを渡す
+        return view('posts.show', compact('post', 'groupedMedicationRecords', 'timingTags'));
     }
 
     /**
