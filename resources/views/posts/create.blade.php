@@ -17,12 +17,6 @@
                     @endif
                     @if (session('error'))
                         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                            {{ session('error') }}
-                        </div>
-                    @endif
-                    {{-- バリデーションエラーの表示 --}}
-                    @if ($errors->any())
-                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
                             <ul class="list-disc list-inside">
                                 @foreach ($errors->all() as $error)
                                     <li>{{ $error }}</li>
@@ -48,7 +42,9 @@
 
                         {{-- 全ての薬を服用済みチェックボックス --}}
                         <div class="mb-4 flex items-center">
-                            <input type="checkbox" name="all_meds_taken" id="all_meds_taken" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" {{ old('all_meds_taken') ? 'checked' : '' }}>
+                            {{-- ★修正点1: hidden input を追加して、チェックがない場合も 0 を送信 --}}
+                            <input type="hidden" name="all_meds_taken" value="0">
+                            <input type="checkbox" name="all_meds_taken" id="all_meds_taken" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1" {{ old('all_meds_taken') ? 'checked' : '' }}>
                             <label for="all_meds_taken" class="ml-2 block text-sm font-medium text-gray-700">全ての薬を服用済み</label>
                         </div>
 
@@ -95,7 +91,9 @@
                                                 </select>
                                             </div>
                                             <div class="flex items-center">
-                                                <input type="checkbox" name="medications[{{ $index }}][is_completed]" id="is_completed_{{ $index }}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" {{ (isset($oldMedication['is_completed']) && $oldMedication['is_completed']) ? 'checked' : '' }}>
+                                                {{-- ★修正点2: hidden input を追加して、チェックがない場合も 0 を送信 --}}
+                                                <input type="hidden" name="medications[{{ $index }}][is_completed]" value="0">
+                                                <input type="checkbox" name="medications[{{ $index }}][is_completed]" id="is_completed_{{ $index }}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1" {{ (isset($oldMedication['is_completed']) && $oldMedication['is_completed']) ? 'checked' : '' }}>
                                                 <label for="is_completed_{{ $index }}" class="ml-2 block text-sm font-medium text-gray-700">服用した</label>
                                             </div>
                                         </div>
@@ -133,13 +131,15 @@
             function toggleReasonNotTaken() {
                 if (allMedsTakenCheckbox.checked) {
                     reasonNotTakenField.style.display = 'none';
-                    reasonNotTakenField.querySelector('textarea').value = ''; // 非表示にする際は中身をクリア
+                    const textarea = reasonNotTakenField.querySelector('textarea');
+                    if (textarea) textarea.value = ''; // 非表示にする際は中身をクリア
                 } else {
                     reasonNotTakenField.style.display = 'block';
                 }
             }
 
             // 新しい薬の記録アイテムを作成する関数
+            // medicationName はドロップダウンのため不要
             function createMedicationRecordItem(index, medicationId = '', timingTagId = '', isCompleted = false) {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'medication-record-item p-4 mb-3 border border-gray-200 rounded-md bg-white shadow-sm relative';
@@ -159,30 +159,31 @@
                         <label for="timing_tag_id_${index}" class="block text-sm font-medium text-gray-700">服用タイミング</label>
                         <select name="medications[${index}][timing_tag_id]" id="timing_tag_id_${index}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
                             <option value="">タイミングを選択してください</option>
-                            {{-- Bladeの変数をJavaScriptに埋め込む --}}
                             @foreach ($timingTags as $timingTag)
                                 <option value="{{ $timingTag->timing_tag_id }}">{{ $timingTag->timing_name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="flex items-center">
-                        <input type="checkbox" name="medications[${index}][is_completed]" id="is_completed_${index}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        {{-- ★修正点5: hidden input を追加して、チェックがない場合も 0 を送信 --}}
+                        <input type="hidden" name="medications[${index}][is_completed]" value="0">
+                        <input type="checkbox" name="medications[${index}][is_completed]" id="is_completed_${index}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1">
                         <label for="is_completed_${index}" class="ml-2 block text-sm font-medium text-gray-700">服用した</label>
                     </div>
                 `;
 
                 // 以前の入力値があれば、初期値を設定
-                if (medicationId) {
-                    const medSelect = itemDiv.querySelector(`#medication_id_${index}`);
-                    if (medSelect) medSelect.value = medicationId;
+                const medSelect = itemDiv.querySelector(`#medication_id_${index}`);
+                if (medicationId && medSelect) {
+                    medSelect.value = medicationId;
                 }
-                if (timingTagId) {
-                    const timingSelect = itemDiv.querySelector(`#timing_tag_id_${index}`);
-                    if (timingSelect) timingSelect.value = timingTagId;
+                const timingSelect = itemDiv.querySelector(`#timing_tag_id_${index}`);
+                if (timingTagId && timingSelect) {
+                    timingSelect.value = timingTagId;
                 }
-                if (isCompleted) {
-                    const completedCheckbox = itemDiv.querySelector(`#is_completed_${index}`);
-                    if (completedCheckbox) completedCheckbox.checked = true;
+                const completedCheckbox = itemDiv.querySelector(`#is_completed_${index}`);
+                if (isCompleted && completedCheckbox) {
+                    completedCheckbox.checked = true;
                 }
 
                 return itemDiv;
@@ -206,10 +207,14 @@
             toggleReasonNotTaken();
 
             // 以前の入力値がない場合、デフォルトで1つの薬の記録フォームを追加
-            if (!medicationRecordsContainer.querySelector('.medication-record-item')) {
+            // old('medications') が存在しない（初回ロード時やエラー後の再表示で以前薬の記録がなかった場合）
+            // かつ、medication_records_container 内に .medication-record-item が存在しない場合
+            const existingMedicationItems = medicationRecordsContainer.querySelectorAll('.medication-record-item');
+            if (existingMedicationItems.length === 0) {
                 medicationRecordsContainer.appendChild(createMedicationRecordItem(medicationRecordIndex));
                 medicationRecordIndex++;
             }
+            // old() で再表示された場合は、すでに要素があるので追加しない
         });
     </script>
 </x-app-layout>

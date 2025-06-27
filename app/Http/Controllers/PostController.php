@@ -59,52 +59,56 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
+        // ★★★修正: all_meds_taken と is_completed のバリデーションを nullable に変更★★★
+        // (hidden input と value="0" があるので、理論的には required|boolean で問題ないはずですが、
+        //  もし dd() が表示されないなら、これが原因の可能性があります)
+        $rules = [
             'post_date' => 'required|date',
-            'all_meds_taken' => 'boolean',
-            'reason_not_taken' => 'nullable|string|max:500',
             'content' => 'nullable|string|max:1000',
-            'medications' => 'nullable|array',
-            'medications.*.medication_id' => 'required_with:medications|exists:medications,medication_id',
-            'medications.*.timing_tags' => 'nullable|array',
-            'medications.*.timing_tags.*.timing_tag_id' => 'required_with:medications.*.timing_tags|exists:timing_tags,timing_tag_id',
-            'medications.*.timing_tags.*.is_completed' => 'boolean',
-        ]);
+            'all_meds_taken' => 'nullable|boolean', // required から nullable に変更
+            'reason_not_taken' => 'nullable|string|max:500',
+            'medications' => 'required|array|min:1',
+            'medications.*.medication_id' => 'required|exists:medications,medication_id',
+            'medications.*.timing_tag_id' => 'required|exists:timing_tags,timing_tag_id',
+            'medications.*.is_completed' => 'nullable|boolean', // required から nullable に変更
+        ];
 
-        DB::beginTransaction();
+        // all_meds_taken が false の場合のみ reason_not_taken を必須にする
+        // ここでは `$request->input()` を使うため、nullable|boolean にしても機能するはず
+        if (!$request->input('all_meds_taken')) {
+            $rules['reason_not_taken'] = 'required|string|max:500';
+        }
+
+        // ★★★重要: バリデーション前に生のリクエストデータを確認します★★★
+        dd($request->all()); // この行を有効にする
+
         try {
-            $post = Post::create([
-                'user_id' => Auth::id(),
-                'post_date' => $validatedData['post_date'],
-                'all_meds_taken' => $request->has('all_meds_taken'),
-                'reason_not_taken' => $validatedData['reason_not_taken'] ?? null,
-                'content' => $validatedData['content'] ?? null,
-            ]);
+            // dd() でデータを確認した後、この $request->validate($rules); を有効に戻してください。
+            // $validatedData = $request->validate($rules);
 
-            if (isset($validatedData['medications'])) {
-                foreach ($validatedData['medications'] as $medicationData) {
-                    $medicationId = $medicationData['medication_id'];
-                    $postMedicationRecord = $post->postMedicationRecords()->create([
-                        'medication_id' => $medicationId,
-                        'is_completed' => false, // フォームで扱っていないため、一旦false
-                    ]);
+            DB::beginTransaction();
 
-                    if (isset($medicationData['timing_tags'])) {
-                        $pivotData = [];
-                        foreach ($medicationData['timing_tags'] as $timingTagData) {
-                            $timingTagId = $timingTagData['timing_tag_id'];
-                            $isCompleted = isset($timingTagData['is_completed']) ? (bool)$timingTagData['is_completed'] : false;
-                            $pivotData[$timingTagId] = ['is_completed' => $isCompleted];
-                        }
-                        $postMedicationRecord->timingTags()->attach($pivotData);
-                    }
-                }
+            $post = new Post();
+            $post->user_id = Auth::id();
+            $post->post_date = $validatedData['post_date']; // dd($request->all()) が有効な間はコメントアウト
+            $post->content = $validatedData['content'] ?? null; // dd($request->all()) が有効な間はコメントアウト
+            $post->all_meds_taken = $validatedData['all_meds_taken']; // dd($request->all()) が有効な間はコメントアウト
+            $post->reason_not_taken = $validatedData['reason_not_taken'] ?? null; // dd($request->all()) が有効な間はコメントアウト
+            $post->save();
+
+            foreach ($validatedData['medications'] as $medicationRecord) {
+                $post->postMedicationRecords()->create([
+                    'medication_id' => $medicationRecord['medication_id'],
+                    'timing_tag_id' => $medicationRecord['timing_tag_id'],
+                    'is_completed' => $medicationRecord['is_completed'],
+                ]);
             }
+
             DB::commit();
-            return redirect()->route('posts.index')->with('success', '投稿が正常に作成されました！');
-        } catch (\Exception | \Throwable $e) { // Throwable を追加してより広範囲なエラーをキャッチ
+            return redirect()->route('posts.index')->with('success', '新しい投稿が正常に作成されました。');
+        } catch (\Exception | \Throwable $e) {
             DB::rollBack();
-            Log::error('投稿作成エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString()); // スタックトレースも出力
+            Log::error('投稿作成エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return redirect()->back()->withInput()->with('error', '投稿の作成中にエラーが発生しました。もう一度お試しください。');
         }
     }
