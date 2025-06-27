@@ -18,6 +18,17 @@
                         <p class="text-gray-700 mb-4"><strong>備考:</strong> {{ $medication->notes }}</p>
 
                         <div class="mt-6 pt-4 border-t border-gray-300 flex justify-end space-x-3">
+                            {{-- ★★★ここを修正：from_dateがある場合は日付指定の戻るリンクを優先★★★ --}}
+                            @if ($from_date)
+                                <a href="{{ route('posts.daily_records', ['date' => $from_date]) }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-lg hover:underline transition-colors duration-300">
+                                    {{ \Carbon\Carbon::parse($from_date)->format('Y年m月d日') }} の記録に戻る
+                                </a>
+                            @else
+                                <a href="{{ route('medications.index') }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-lg hover:underline transition-colors duration-300">
+                                    薬一覧に戻る
+                                </a>
+                            @endif
+                            {{-- ★★★ここまで修正★★★ --}}
                             <a href="{{ route('medications.edit', $medication->medication_id) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                 編集
                             </a>
@@ -29,20 +40,6 @@
                                 </button>
                             </form>
                         </div>
-                    </div>
-
-                    <div class="mt-8 text-center">
-                        {{-- ★★★ここを修正：from_dateがある場合は日付指定の戻るリンクを優先★★★ --}}
-                        @if ($from_date)
-                            <a href="{{ route('posts.daily_records', ['date' => $from_date]) }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-lg hover:underline transition-colors duration-300">
-                                {{ \Carbon\Carbon::parse($from_date)->format('Y年m月d日') }} の記録に戻る
-                            </a>
-                        @else
-                            <a href="{{ route('medications.index') }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-lg hover:underline transition-colors duration-300">
-                                薬一覧に戻る
-                            </a>
-                        @endif
-                        {{-- ★★★ここまで修正★★★ --}}
                     </div>
                 </div>
             </div>
