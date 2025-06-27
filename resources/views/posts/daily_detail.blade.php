@@ -11,7 +11,7 @@
                 <div class="p-6 text-gray-900">
                     <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
                         <h3 class="text-xl font-bold text-blue-800">{{ $date->format('Y年m月d日') }} の投稿詳細</h3>
-                        <a href="{{ route('posts.calendar', ['year' => $date->year, 'month' => $date->month]) }}" class="mt-2 inline-flex items-center text-blue-600 hover:text-blue-800 text-sm">
+                        <a href="{{ route('posts.calendar', ['year' => $date->copy()->subMonth()->year, 'month' => $date->copy()->subMonth()->month]) }}" class="mt-2 inline-flex items-center text-blue-600 hover:text-blue-800 text-sm">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                             カレンダーに戻る
                         </a>
@@ -32,7 +32,7 @@
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">ユーザー:</strong> {{ $post->user->name ?? '不明なユーザー' }}</p>
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">メモ:</strong> {{ $post->content ?? 'なし' }}</p>
                                     <p class="text-sm text-gray-700 mb-2 flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pill mr-2 text-green-600"><path d="m10.5 20.5 9.5-9.5a4.5 4.5 0 0 0-7.5-7.5L3.5 13.5a4.5 4.5 0 0 0 7.5 7.5Z"/><path d="m14 14 3 3"/><path d="m15 6 3-3"/><path d="m2 22 1-1"/><path d="m19 5 1-1"/></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucude-pill mr-2 text-green-600"><path d="m10.5 20.5 9.5-9.5a4.5 4.5 0 0 0-7.5-7.5L3.5 13.5a4.5 4.5 0 0 0 7.5 7.5Z"/><path d="m14 14 3 3"/><path d="m15 6 3-3"/><path d="m2 22 1-1"/><path d="m19 5 1-1"/></svg>
                                         <strong class="text-gray-800">記録された薬の数:</strong> {{ $post->postMedicationRecords->count() }}種類
                                     </p>
 
@@ -46,8 +46,8 @@
                                             <ul class="space-y-2">
                                                 @foreach ($post->postMedicationRecords as $record)
                                                     <li class="p-2 rounded-md bg-white border border-gray-200 shadow-sm">
-                                                        {{-- ★★★ここを修正：medications.show にリンクする★★★ --}}
-                                                        <a href="{{ route('medications.show', $record->medication->medication_id) }}" class="font-bold text-blue-800 block mb-1 hover:underline cursor-pointer">
+                                                        {{-- ★★★ここを修正：post_dateをクエリパラメータとして追加★★★ --}}
+                                                        <a href="{{ route('medications.show', ['medication' => $record->medication->medication_id, 'from_date' => $post->post_date->format('Y-m-d')]) }}" class="font-bold text-blue-800 block mb-1 hover:underline cursor-pointer">
                                                             {{ $record->medication->medication_name ?? '不明な薬' }}
                                                         </a>
                                                         {{-- ★★★ここまで修正★★★ --}}
