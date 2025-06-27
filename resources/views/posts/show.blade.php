@@ -55,28 +55,27 @@
 
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-800 mb-2">個別の服薬記録</h3>
-                        @if ($sortedMedicationRecords->isEmpty())
+                        {{-- コントローラーから渡された groupedMedicationRecords が空でないことを確認 --}}
+                        @if ($groupedMedicationRecords->isEmpty())
                             <p class="text-gray-600">この投稿には薬の記録がありません。</p>
                         @else
                             <div class="space-y-6"> {{-- 各タイミンググループ間のスペースを確保 --}}
+                                {{-- コントローラーから渡された表示順のタイミングタグをループ --}}
                                 @foreach ($timingTags as $timingTag)
-                                    {{-- 現在のタイミングタグに属する薬の記録をフィルタリング --}}
-                                    @php
-                                        $recordsForThisTiming = $sortedMedicationRecords->where('timing_tag_id', $timingTag->timing_tag_id);
-                                    @endphp
-
-                                    @if ($recordsForThisTiming->isNotEmpty())
+                                    {{-- 現在のタイミングタグに属する薬の記録があるか確認（コントローラーでグループ化されている） --}}
+                                    @if ($groupedMedicationRecords->has($timingTag->timing_tag_id))
                                         <div class="bg-gray-100 p-4 rounded-lg shadow-sm border border-gray-200">
                                             <h4 class="text-md font-bold text-gray-700 mb-3 flex items-center">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock mr-2 text-gray-500"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucude-clock mr-2 text-gray-500"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                                 {{ $timingTag->timing_name }}
                                             </h4>
                                             <ul class="list-none space-y-3">
-                                                @foreach ($recordsForThisTiming as $record)
+                                                {{-- グループ化されたコレクションから該当タイミングのレコードを取得してループ --}}
+                                                {{-- $groupedMedicationRecords->get($timingTag->timing_tag_id) は既にソートされている --}}
+                                                @foreach ($groupedMedicationRecords->get($timingTag->timing_tag_id) as $record)
                                                     <li class="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0 sm:space-x-4">
                                                         <div class="flex items-center flex-grow">
                                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pill mr-2 text-purple-500 flex-shrink-0"><path d="m10.5 20.5 9.5-9.5a4.5 4.5 0 0 0-7.5-7.5L3.5 13.5a4.5 4.5 0 0 0 7.5 7.5Z"/><path d="m14 14 3 3"/><path d="m15 6 3-3"/><path d="m2 22 1-1"/><path d="m19 5 1-1"/></svg>
-                                                            
                                                             <span class="text-gray-700 flex-grow">
                                                                 @if ($record->medication && $record->medication->medication_id)
                                                                     <a href="{{ route('medications.show', ['medication' => $record->medication->medication_id, 'from_post_id' => $post->post_id]) }}" class="font-semibold text-blue-600 hover:text-blue-800 hover:underline">
