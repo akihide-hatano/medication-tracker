@@ -157,55 +157,44 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post)
     {
+        // ★★★修正: バリデーションルールを create/edit フォームの構造に合わせる★★★
         $validatedData = $request->validate([
-            'post_date' => 'required|date',
-            'all_meds_taken' => 'boolean',
-            'reason_not_taken' => 'nullable|string|max:500',
-            'content' => 'nullable|string|max:1000',
-            'medications' => 'nullable|array',
-            'medications.*.medication_id' => 'required_with:medications|exists:medications,medication_id',
-            'medications.*.timing_tags' => 'nullable|array',
-            'medications.*.timing_tags.*.timing_tag_id' => 'required_with:medications.*.timing_tags|exists:timing_tags,timing_tag_id',
-            'medications.*.timing_tags.*.is_completed' => 'boolean',
+            'post_date' => ['required', 'date'],
+            'content' => ['nullable', 'string', 'max:1000'],
+            'all_meds_taken' => ['required', 'boolean'],
+            'reason_not_taken' => ['nullable', 'string', 'max:500', 'required_if:all_meds_taken,0'],
+            'medications' => ['required', 'array', 'min:1'],
+            'medications.*.medication_id' => ['required', 'exists:medications,medication_id'],
+            'medications.*.timing_tag_id' => ['required', 'exists:timing_tags,timing_tag_id'],
+            'medications.*.is_completed' => ['required', 'boolean'],
         ]);
 
         DB::beginTransaction();
         try {
             $post->update([
                 'post_date' => $validatedData['post_date'],
-                'all_meds_taken' => $request->has('all_meds_taken'),
+                'all_meds_taken' => $validatedData['all_meds_taken'], // バリデーション済みデータを使用
                 'reason_not_taken' => $validatedData['reason_not_taken'] ?? null,
                 'content' => $validatedData['content'] ?? null,
             ]);
 
-            // 既存の関連レコードを全て削除してから再作成
-            foreach ($post->postMedicationRecords as $pmr) {
-                $pmr->timingTags()->detach();
-                $pmr->delete();
+            // ★★★修正: 既存の PostMedicationRecord を全て削除してから新しいものを作成★★★
+            // PostMedicationRecord は Post に hasMany リレーションなので、
+            // 関連レコードを全て削除するには postMedicationRecords() メソッドに delete() をチェインする。
+            $post->postMedicationRecords()->delete();
+
+            // 新しい PostMedicationRecord をループして作成
+            foreach ($validatedData['medications'] as $medicationRecord) {
+                $post->postMedicationRecords()->create([
+                    'medication_id' => $medicationRecord['medication_id'],
+                    'timing_tag_id' => $medicationRecord['timing_tag_id'],
+                    'is_completed' => $medicationRecord['is_completed'],
+                ]);
             }
 
-            if (isset($validatedData['medications'])) {
-                foreach ($validatedData['medications'] as $medicationData) {
-                    $medicationId = $medicationData['medication_id'];
-                    $postMedicationRecord = $post->postMedicationRecords()->create([
-                        'medication_id' => $medicationId,
-                        'is_completed' => false,
-                    ]);
-
-                    if (isset($medicationData['timing_tags'])) {
-                        $pivotData = [];
-                        foreach ($medicationData['timing_tags'] as $timingTagData) {
-                            $timingTagId = $timingTagData['timing_tag_id'];
-                            $isCompleted = isset($timingTagData['is_completed']) ? (bool)$timingTagData['is_completed'] : false;
-                            $pivotData[$timingTagId] = ['is_completed' => $isCompleted];
-                        }
-                        $postMedicationRecord->timingTags()->attach($pivotData);
-                    }
-                }
-            }
             DB::commit();
             return redirect()->route('posts.show', $post->post_id)->with('success', '投稿が正常に更新されました！');
-        } catch (\Exception | \Throwable $e) { // Throwable を追加
+        } catch (\Exception | \Throwable $e) {
             DB::rollBack();
             Log::error('投稿更新エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return redirect()->back()->withInput()->with('error', '投稿の更新中にエラーが発生しました。もう一度お試しください。');
@@ -223,19 +212,20 @@ class PostController extends Controller
     {
         DB::beginTransaction();
         try {
-            foreach ($post->postMedicationRecords as $pmr) {
-                $pmr->timingTags()->detach();
-                $pmr->delete();
-            }
-            $post->delete();
+            // ★★★修正: `timingTags()->detach()` を削除し、関連レコードをまとめて削除★★★
+            // PostMedicationRecord は Post に hasMany リレーションなので、
+            // 関連レコードを全て削除するには postMedicationRecords() メソッドに delete() をチェインする。
+            $post->postMedicationRecords()->delete();
+            $post->delete(); // Post自体を削除
             DB::commit();
             return redirect()->route('posts.index')->with('success', '投稿が正常に削除されました！');
-        } catch (\Exception | \Throwable $e) { // Throwable を追加
+        } catch (\Exception | \Throwable $e) {
             DB::rollBack();
             Log::error('投稿削除エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return redirect()->back()->with('error', '投稿の削除中にエラーが発生しました。もう一度お試しください。');
         }
     }
+
 
     /**
      * 服薬状況をカレンダー形式で表示
