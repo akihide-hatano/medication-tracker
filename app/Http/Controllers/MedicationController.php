@@ -46,9 +46,10 @@ class MedicationController extends Controller
      *
      * @param  \App\Models\Medication  $medication
      */
-    public function show(Medication $medication)
+    public function show(Medication $medication,Request $request)
     {
-        return view('medications.show', compact('medication'));
+        $from_date = $request->query('from_date');
+        return view('medications.show', compact('medication','from_date'));
     }
 
     /**
