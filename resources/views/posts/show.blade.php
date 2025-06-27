@@ -61,7 +61,14 @@
                             <ul class="list-disc list-inside space-y-2">
                                 @foreach ($post->postMedicationRecords as $record)
                                     <li class="text-gray-700">
-                                        <span class="font-semibold">{{ $record->medication->medication_name ?? '不明な薬' }}</span>
+                                        {{-- ★★★ここを修正：薬の名前をリンクにする（from_dateクエリパラメータも追加）★★★ --}}
+                                        @if ($record->medication)
+                                            <a href="{{ route('medications.show', ['medication' => $record->medication->medication_id, 'from_date' => $post->post_date->format('Y-m-d')]) }}" class="font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+                                                {{ $record->medication->medication_name }}
+                                            </a>
+                                        @else
+                                            <span class="font-semibold">不明な薬</span>
+                                        @endif
                                         （{{ $record->timingTag->timing_name ?? 'タイミングなし' }}）:
                                         @if ($record->is_completed)
                                             <span class="text-green-600 font-semibold">服用済み</span>
