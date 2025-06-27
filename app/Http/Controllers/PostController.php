@@ -80,11 +80,11 @@ class PostController extends Controller
         }
 
         // ★★★重要: バリデーション前に生のリクエストデータを確認します★★★
-        dd($request->all()); // この行を有効にする
+        // dd($request->all()); // この行を有効にする
 
         try {
             // dd() でデータを確認した後、この $request->validate($rules); を有効に戻してください。
-            // $validatedData = $request->validate($rules);
+            $validatedData = $request->validate($rules);
 
             DB::beginTransaction();
 
