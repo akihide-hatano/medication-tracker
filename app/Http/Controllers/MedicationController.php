@@ -49,7 +49,9 @@ class MedicationController extends Controller
     public function show(Medication $medication,Request $request)
     {
         $from_date = $request->query('from_date');
-        return view('medications.show', compact('medication','from_date'));
+        $from_post_id = $request->query('from_post_id');
+
+        return view('medications.show', compact('medication','from_date','from_post_id'));
     }
 
     /**

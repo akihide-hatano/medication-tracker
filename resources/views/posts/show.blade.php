@@ -61,10 +61,10 @@
                             <ul class="list-disc list-inside space-y-2">
                                 @foreach ($post->postMedicationRecords as $record)
                                     <li class="text-gray-700">
-                                        {{-- ★★★ここを修正：薬の名前をリンクにする（from_dateクエリパラメータも追加）★★★ --}}
-                                        @if ($record->medication)
-                                            <a href="{{ route('medications.show', ['medication' => $record->medication->medication_id, 'from_date' => $post->post_date->format('Y-m-d')]) }}" class="font-semibold text-blue-600 hover:text-blue-800 hover:underline">
-                                                {{ $record->medication->medication_name }}
+                                        @if ($record->medication && $record->medication->medication_id)
+                                            {{-- from_dateを削除し、from_post_idを追加 --}}
+                                            <a href="{{ route('medications.show', ['medication' => $record->medication->medication_id, 'from_post_id' => $post->post_id]) }}" class="font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+                                                {{ $record->medication->medication_name ?? '不明な薬' }}
                                             </a>
                                         @else
                                             <span class="font-semibold">不明な薬</span>
