@@ -14,7 +14,7 @@
                         <p class="text-gray-700 mb-2"><strong>薬のID:</strong> {{ $medication->medication_id }}</p>
                         <p class="text-gray-700 mb-2"><strong>容量:</strong> {{ $medication->dosage }}</p>
                         <p class="text-gray-700 mb-2"><strong>効果:</strong> {{ $medication->effect }}</p>
-                        <p class="text-gray-700 mb-2"><strong>副作用:</strong> {{ $medication->side_effect }}</p>
+                        <p class="text-gray-700 mb-2"><strong>副作用:</strong> {{ $medication->side_effects }}</p>
                         <p class="text-gray-700 mb-4"><strong>備考:</strong> {{ $medication->notes }}</p>
 
                         <div class="mt-6 pt-4 border-t border-gray-300 flex justify-end space-x-3">
@@ -37,7 +37,8 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left mr-1"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
                                 元の投稿に戻る
                             </a>
-                        @elseif ($from_date) {{-- ここにelseifを追加 --}}
+                        {{-- from_dateの場合に元のpostsに戻る --}}
+                        @elseif ($from_date)
                             <a href="{{ route('posts.daily_records', ['dateString' => $from_date]) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-md hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                                 {{ \Carbon\Carbon::parse($from_date)->format('Y年m月d日') }} の記録に戻る
@@ -48,7 +49,6 @@
                             投稿一覧に戻る
                         </a>
                     </div>
-                    {{-- ★★★ここまで修正★★★ --}}
                 </div>
             </div>
         </div>

@@ -15,7 +15,6 @@
                         </div>
                     @endif
 
-                    {{-- ★ここから修正・追加する部分★ --}}
                     <div class="flex justify-between items-center mb-6">
                         <div class="flex space-x-2">
                             {{-- 全ての投稿を表示するボタン --}}
@@ -33,23 +32,34 @@
                             新しい投稿を追加
                         </a>
                     </div>
-                    {{-- ★ここまで修正・追加する部分★ --}}
 
                     @if ($posts->isEmpty())
                         <p class="text-gray-600 text-center text-lg py-10">まだ投稿がありません。新しい投稿を作成してみましょう。</p>
                     @else
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             @foreach ($posts as $post)
-                                <div class="bg-gradient-to-br from-blue-50 to-blue-200 p-7 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                                    <h3 class="text-2xl font-extrabold text-blue-800 mb-4 flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days mr-3 text-blue-600"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
+                                {{-- ★★★ここから修正：服薬状況に応じて背景色を変更★★★ --}}
+                                @php
+                                    $cardClasses = 'p-7 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1';
+                                    if ($post->all_meds_taken) {
+                                        // 全て服用済みの場合：青系のグラデーション（元々の色）
+                                        $cardClasses .= ' bg-gradient-to-br from-blue-50 to-blue-200';
+                                    } else {
+                                        // 未完了がある場合：赤系のグラデーション（薄い赤）
+                                        $cardClasses .= ' bg-gradient-to-br from-red-50 to-red-100'; // to-red-100でより薄く
+                                    }
+                                @endphp
+                                <div class="{{ $cardClasses }}">
+                                {{-- ★★★ここまで修正★★★ --}}
+                                    <h3 class="text-2xl font-extrabold {{ $post->all_meds_taken ? 'text-blue-800' : 'text-red-800' }} mb-4 flex items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days mr-3 {{ $post->all_meds_taken ? 'text-blue-600' : 'text-red-600' }}"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
                                         {{ $post->post_date->format('Y年m月d日') }}
                                     </h3>
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">ユーザー:</strong> {{ $post->user->name ?? '不明なユーザー' }}</p>
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">メモ:</strong> {{ Str::limit($post->content, 100) ?? 'なし' }}</p>
                                     
                                     <p class="text-sm text-gray-700 mb-2 flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pill mr-2 text-green-600"><path d="m10.5 20.5 9.5-9.5a4.5 4.5 0 0 0-7.5-7.5L3.5 13.5a4.5 4.5 0 0 0 7.5 7.5Z"/><path d="m14 14 3 3"/><path d="m15 6 3-3"/><path d="m2 22 1-1"/><path d="m19 5 1-1"/></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pill mr-2 {{ $post->all_meds_taken ? 'text-blue-600' : 'text-red-600' }}"><path d="m10.5 20.5 9.5-9.5a4.5 4.5 0 0 0-7.5-7.5L3.5 13.5a4.5 4.5 0 0 0 7.5 7.5Z"/><path d="m14 14 3 3"/><path d="m15 6 3-3"/><path d="m2 22 1-1"/><path d="m19 5 1-1"/></svg>
                                         <strong class="text-gray-800">記録された薬の数:</strong> {{ $post->postMedicationRecords->count() }}種類
                                     </p>
 
@@ -87,7 +97,7 @@
                     @endif
 
                     <div class="mt-8 text-center">
-                        <a href="{{}}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-lg hover:underline transition-colors duration-300">
+                        <a href="{{ route('dashboard') }}" class="text-indigo-600 hover:text-indigo-900 font-semibold text-lg hover:underline transition-colors duration-300">
                             トップページに戻る
                         </a>
                     </div>
