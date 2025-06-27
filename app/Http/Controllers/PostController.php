@@ -111,8 +111,24 @@ class PostController extends Controller
      */
     public function show(Post $post)
     {
-        $post->load(['user', 'postMedicationRecords.medication', 'timingTags']);
-        return view('posts.show', compact('post'));
+        // リレーションシップを eager load
+        $post->load(['user', 'postMedicationRecords.medication', 'postMedicationRecords.timingTag']);
+
+        // 全てのPostMedicationRecordをタイミングタグIDと薬の名前でソート
+        // これをコントローラーでソートしておくことで、ビューでの処理がシンプルになる
+        $sortedMedicationRecords = $post->postMedicationRecords->sortBy(function($record) {
+            $timingId = $record->timingTag ? $record->timingTag->timing_tag_id : PHP_INT_MAX;
+            $medName = $record->medication ? $record->medication->medication_name : '';
+            // フォーマットして複合キーとして利用 (数値の前に0を埋めて文字列ソートでも正しくなるようにする)
+            return sprintf('%010d%s', $timingId, $medName);
+        })->values(); // ソート後にコレクションのインデックスをリセット
+
+        // 全ての服用タイミングタグを表示順で取得
+        // timing_tag_id が表示順を兼ねていると仮定します。
+        // もしTimingTagモデルに別途display_orderなどのカラムがあれば、それを使うべきです。
+        $timingTags = TimingTag::orderBy('timing_tag_id')->get();
+
+        return view('posts.show', compact('post', 'sortedMedicationRecords', 'timingTags'));
     }
 
     /**
@@ -260,7 +276,7 @@ class PostController extends Controller
         $medicationStatusByDay = [];
         foreach ($posts as $post) {
             $day = Carbon::parse($post->post_date)->day;
-            
+
             $status = $post->all_meds_taken ? 'completed' : 'not_completed';
             $details = [
                 'status' => $status
