@@ -43,6 +43,74 @@
     @apply text-purple-500;
 }
 
+/* --- 追加する6種類 (timing_tag_id = 5 から 10) --- */
+
+/* timing_tag_id = 5 (例: 夕食前) */
+.timing-block-id-5 {
+    @apply bg-pink-100 border-pink-200;
+}
+.timing-text-id-5 {
+    @apply text-pink-700;
+}
+.timing-icon-id-5 {
+    @apply text-pink-500;
+}
+
+/* timing_tag_id = 6 (例: 夕食後) */
+.timing-block-id-6 {
+    @apply bg-red-100 border-red-200;
+}
+.timing-text-id-6 {
+    @apply text-red-700;
+}
+.timing-icon-id-6 {
+    @apply text-red-500;
+}
+
+/* timing_tag_id = 7 (例: 就寝前) */
+.timing-block-id-7 {
+    @apply bg-indigo-100 border-indigo-200;
+}
+.timing-text-id-7 {
+    @apply text-indigo-700;
+}
+.timing-icon-id-7 {
+    @apply text-indigo-500;
+}
+
+/* timing_tag_id = 8 (例: 起床時) */
+.timing-block-id-8 {
+    @apply bg-teal-100 border-teal-200;
+}
+.timing-text-id-8 {
+    @apply text-teal-700;
+}
+.timing-icon-id-8 {
+    @apply text-teal-500;
+}
+
+/* timing_tag_id = 9 (例: 頓服) */
+.timing-block-id-9 {
+    @apply bg-orange-100 border-orange-200;
+}
+.timing-text-id-9 {
+    @apply text-orange-700;
+}
+.timing-icon-id-9 {
+    @apply text-orange-500;
+}
+
+/* timing_tag_id = 10 (例: その他) */
+.timing-block-id-10 {
+    @apply bg-lime-100 border-lime-200;
+}
+.timing-text-id-10 {
+    @apply text-lime-700;
+}
+.timing-icon-id-10 {
+    @apply text-lime-500;
+}
+
 /* その他のタイミングタグIDや定義されていない場合のデフォルト色 */
 .timing-block-default {
     @apply bg-gray-100 border-gray-200;

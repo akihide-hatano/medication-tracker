@@ -72,7 +72,7 @@
                                             $iconColorClass = "timing-icon-id-{$timingId}"; // 再追加
 
                                             // 定義されていないIDの場合はデフォルトクラスを適用
-                                            if (!in_array($timingId, [1, 2, 3, 4])) { // app.cssで定義したIDを列挙
+                                            if (!in_array($timingId, [1, 2, 3, 4,5,6,7,8,9,10])) { // app.cssで定義したIDを列挙
                                                 $blockClass = "timing-block-default";
                                                 $textColorClass = "timing-text-default"; // 再追加
                                                 $iconColorClass = "timing-icon-default"; // 再追加
