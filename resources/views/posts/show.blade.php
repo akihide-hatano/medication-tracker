@@ -63,7 +63,7 @@
                                 {{-- コントローラーから渡された表示順のタイミングタグをループ --}}
                                 @foreach ($timingTags as $timingTag)
                                     {{-- 現在のタイミングタグに属する薬の記録があるか確認（コントローラーでグループ化されている） --}}
-                                    @if ($groupedMedationRecords->has($timingTag->timing_tag_id))
+                                    @if ($groupedMedicationRecords->has($timingTag->timing_tag_id))
                                         {{-- ここから背景色と境界線の色を動的に変更 --}}
                                         <div class="p-4 rounded-lg shadow-sm
                                             @if ($timingTag->timing_tag_id == 1) bg-blue-100 border-blue-200
