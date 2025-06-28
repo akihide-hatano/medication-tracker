@@ -1,4 +1,4 @@
-/* resources/css/color.css */
+
 /* timing_tag_id = 1 (例: 朝食前) */
 .timing-block-id-1 {
     @apply bg-blue-100 border-blue-200;
@@ -111,6 +111,7 @@
     @apply text-lime-500;
 }
 
+
 /* その他のタイミングタグIDや定義されていない場合のデフォルト色 */
 .timing-block-default {
     @apply bg-gray-100 border-gray-200;
@@ -121,3 +122,72 @@
 .timing-icon-default {
     @apply text-gray-500;
 }
+
+
+/* --- 新しいカテゴリごとのスタイルとアイコン色 --- */
+
+/* カテゴリブロックのスタイル */
+.category-block {
+    @apply p-4 rounded-lg shadow-sm border border-gray-200 mb-6; /* ベーススタイル */
+}
+
+/* カテゴリ名ごとの背景色と境界線色 */
+.category-block-朝 {
+    @apply bg-blue-50 border-blue-100;
+}
+.category-block-昼 {
+    @apply bg-green-50 border-green-100;
+}
+.category-block-夕 {
+    @apply bg-yellow-50 border-yellow-100;
+}
+.category-block-寝る前 {
+    @apply bg-indigo-50 border-indigo-100;
+}
+.category-block-頓服 {
+    @apply bg-orange-50 border-orange-100;
+}
+.category-block-その他 {
+    @apply bg-gray-50 border-gray-100;
+}
+
+/* カテゴリ名ごとのテキスト色 */
+.category-text-朝 {
+    @apply text-blue-800;
+}
+.category-text-昼 {
+    @apply text-green-800;
+}
+.category-text-夕 {
+    @apply text-yellow-800;
+}
+.category-text-寝る前 {
+    @apply text-indigo-800;
+}
+.category-text-頓服 {
+    @apply text-orange-800;
+}
+.category-text-その他 {
+    @apply text-gray-800;
+}
+
+/* カテゴリごとのアイコン色 */
+.category-icon-朝 {
+    @apply text-blue-600;
+}
+.category-icon-昼 {
+    @apply text-green-600;
+}
+.category-icon-夕 {
+    @apply text-yellow-600;
+}
+.category-icon-寝る前 {
+    @apply text-indigo-600;
+}
+.category-icon-頓服 {
+    @apply text-orange-600;
+}
+.category-icon-その他 {
+    @apply text-gray-600;
+}
+

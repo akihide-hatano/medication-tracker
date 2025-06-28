@@ -142,7 +142,6 @@ class PostController extends Controller
             ->whereNotNull('category_name') // category_nameがnullでないもののみ
             ->orderBy('category_order') // category_orderでソート
             ->get();
-
         return view('posts.show', compact('post', 'categorizedMedicationRecords', 'displayCategories'));
     }
 
