@@ -109,27 +109,41 @@ class PostController extends Controller
      * @param  \App\Models\Post  $post
      * @return \Illuminate\Contracts\View\View
      */
-public function show(Post $post)
+    public function show(Post $post)
     {
-        // リレーションシップを eager load
+        // postMedicationRecords リレーションをロードする際に、
+        // medication と timingTag リレーションも同時にロードします。
+        // timingTag リレーションを通じて category_name と category_order にアクセスできるようになります。
         $post->load(['user', 'postMedicationRecords.medication', 'postMedicationRecords.timingTag']);
-        // 1. 全てのPostMedicationRecordをタイミングタグIDと薬の名前でソート
-        $sortedMedicationRecords = $post->postMedicationRecords->sortBy(function($record) {
-            $timingId = $record->timingTag ? $record->timingTag->timing_tag_id : PHP_INT_MAX;
-            $medName = $record->medication ? $record->medication->medication_name : '';
-            // フォーマットして複合キーとして利用 (数値の前に0を埋めて文字列ソートでも正しくなるようにする)
-            return sprintf('%010d%s', $timingId, $medName);
-        })->values(); // ソート後にコレクションのインデックスをリセット
 
-        // 2. ソートされた記録をタイミングタグIDでグループ化
-        // ここでコレクションのgroupByメソッドを利用
-        $groupedMedicationRecords = $sortedMedicationRecords->groupBy('timing_tag_id');
+        // 服薬記録をカテゴリ名でグループ化し、カテゴリと薬の名前でソート
+        $categorizedMedicationRecords = $post->postMedicationRecords
+            // まずはカテゴリの表示順でソート
+            ->sortBy(function ($record) {
+                // timingTag リレーションが存在しない、または category_order がnullの場合に備えてデフォルト値を設定
+                return $record->timingTag->category_order ?? 999;
+            })
+            // 次に、同じカテゴリ内で薬の名称でソート（アルファベット順など）
+            ->sortBy(function ($record) {
+                return $record->medication->medication_name ?? '';
+            })
+            // 最後に、カテゴリ名でグループ化
+            ->groupBy(function ($record) {
+                // timingTag リレーションが存在しない、または category_name がnullの場合に備えてデフォルト値を設定
+                return $record->timingTag->category_name ?? '未分類';
+            });
 
-        // 3. 全ての服用タイミングタグを表示順で取得（グループの表示順を制御するため）
-        $timingTags = TimingTag::orderBy('timing_tag_id')->get();
 
-        // ビューには、グループ化されたデータと、表示順のタイミングタグを渡す
-        return view('posts.show', compact('post', 'groupedMedicationRecords', 'timingTags'));
+        // 表示するカテゴリのリストを、category_orderでソートして取得します。
+        // これをビューに渡し、外側のループの順序を制御します。
+        // '頓服' と 'その他' を含め、すべての定義済みカテゴリを取得します。
+        $displayCategories = TimingTag::select('category_name', 'category_order')
+            ->distinct() // 重複するカテゴリ名を除外
+            ->whereNotNull('category_name') // category_nameがnullでないもののみ
+            ->orderBy('category_order') // category_orderでソート
+            ->get();
+
+        return view('posts.show', compact('post', 'categorizedMedicationRecords', 'displayCategories'));
     }
 
     /**
