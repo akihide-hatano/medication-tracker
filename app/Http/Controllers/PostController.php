@@ -136,8 +136,8 @@ class PostController extends Controller
                 });
             });
 
-        dd($nestedCategorizedMedicationRecords->toArray(), $displayCategories->toArray()); // デバッグが必要な場合のみコメント解除
-        dd($displayCategories->toArray()); // $displayCategoriesの中身を直接確認したい場合
+        // dd($nestedCategorizedMedicationRecords->toArray(), $displayCategories->toArray()); // デバッグが必要な場合のみコメント解除
+        // dd($displayCategories->toArray()); // $displayCategoriesの中身を直接確認したい場合
 
         return view('posts.show', compact('post', 'nestedCategorizedMedicationRecords', 'displayCategories'));
     }
