@@ -55,15 +55,16 @@
 
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-800 mb-2">個別の服薬記録</h3>
-                        {{-- コントローラーから渡された categorizedMedicationRecords が空でないことを確認 --}}
-                        @if ($categorizedMedicationRecords->isEmpty())
+                        {{-- コントローラーから渡された nestedCategorizedMedicationRecords が空でないことを確認 --}}
+                        @if ($nestedCategorizedMedicationRecords->isEmpty())
                             <p class="text-gray-600">この投稿には薬の記録がありません。</p>
                         @else
                             <div class="space-y-6"> {{-- 各カテゴリグループ間のスペースを確保 --}}
                                 {{-- コントローラーから渡された表示順のカテゴリをループ --}}
                                 @foreach ($displayCategories as $category)
                                     {{-- 現在のカテゴリに属する薬の記録があるか確認 --}}
-                                    @if ($categorizedMedicationRecords->has($category->category_name))
+                                    {{-- nestedCategorizedMedicationRecords はカテゴリ名をキーに持つ --}}
+                                    @if ($nestedCategorizedMedicationRecords->has($category->category_name))
                                         @php
                                             $categoryName = $category->category_name;
                                             $blockClass = "category-block-{$categoryName}";
@@ -102,43 +103,44 @@
                                                 <span class="{{ $iconColorClass }}">{!! $categoryIcon !!}</span>
                                                 {{ $categoryName }}
                                             </h4>
-                                            <ul class="list-none space-y-3 pl-8">
-                                                @foreach ($categorizedMedicationRecords->get($categoryName) as $record)
-                                                    <li class="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0 sm:space-x-4">
-                                                        <div class="flex items-center flex-grow">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pill mr-2 text-purple-500 flex-shrink-0"><path d="m10.5 20.5 9.5-9.5a4.5 4.5 0 0 0-7.5-7.5L3.5 13.5a4.5 4.5 0 0 0 7.5 7.5Z"/><path d="m14 14 3 3"/><path d="m15 6 3-3"/><path d="m2 22 1-1"/><path d="m19 5 1-1"/></svg>
-                                                            <span class="text-gray-700 flex-grow">
-                                                                @if ($record->medication && $record->medication->medication_id)
-                                                                    <a href="{{ route('medications.show', ['medication' => $record->medication->medication_id, 'from_post_id' => $post->post_id]) }}" class="font-semibold text-blue-600 hover:text-blue-800 hover:underline">
-                                                                        {{ $record->medication->medication_name ?? '不明な薬' }}
-                                                                    </a>
-                                                                @else
-                                                                    <span class="font-semibold">{{ $record->medication->medication_name ?? '不明な薬' }}</span>
-                                                                @endif
-                                                                {{-- ★★★ここが修正点★★★ --}}
-                                                                @if ($record->timingTag)
-                                                                    <span class="ml-2 text-sm text-gray-500">({{ $record->timingTag->timing_name }})</span>
-                                                                @endif
-                                                            </span>
-                                                        </div>
-
-                                                        <div class="flex items-center sm:justify-end flex-shrink-0">
-                                                            @if ($record->is_completed)
-                                                                <span class="text-green-600 font-semibold flex items-center text-sm sm:text-base">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-2 mr-1"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-                                                                    服用済み
-                                                                </span>
-                                                            @else
-                                                                <span class="text-red-600 font-semibold flex items-center text-sm sm:text-base">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle mr-1"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
-                                                                    未服用
-                                                                </span>
-                                                                @if ($record->reason_not_taken) <span class="ml-1 text-xs text-gray-600">(理由: {{ Str::limit($record->reason_not_taken, 20) }})</span> @endif
-                                                            @endif
-                                                        </div>
-                                                    </li>
+                                            {{-- ★★★ここからさらにループを追加★★★ --}}
+                                            <div class="space-y-2"> {{-- 詳細タイミングごとのグループ間のスペース --}}
+                                                {{-- $nestedCategorizedMedicationRecords は、カテゴリ名 => [タイミング名 => [レコード...]] の構造 --}}
+                                                @foreach ($nestedCategorizedMedicationRecords->get($categoryName) as $timingName => $recordsInTiming)
+                                                    <div class="ml-4 p-2 rounded-md border border-gray-200 bg-gray-50"> {{-- 詳細タイミングのブロック --}}
+                                                        <h5 class="font-semibold text-gray-700 text-base mb-1">{{ $timingName }}</h5>
+                                                        <ul class="list-disc list-inside space-y-1 text-sm text-gray-800">
+                                                            @foreach ($recordsInTiming as $record)
+                                                                <li class="flex items-center">
+                                                                    {{-- アイコンと薬の情報を表示 --}}
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pill mr-2 text-purple-500 flex-shrink-0"><path d="m10.5 20.5 9.5-9.5a4.5 4.5 0 0 0-7.5-7.5L3.5 13.5a4.5 4.5 0 0 0 7.5 7.5Z"/><path d="m14 14 3 3"/><path d="m15 6 3-3"/><path d="m2 22 1-1"/><path d="m19 5 1-1"/></svg>
+                                                                    <span>
+                                                                        @if ($record->medication)
+                                                                            <a href="{{ route('medications.show', ['medication' => $record->medication->medication_id, 'from_post_id' => $post->post_id]) }}" class="font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+                                                                                {{ $record->medication->medication_name ?? '不明な薬' }}
+                                                                            </a>
+                                                                        @else
+                                                                            <span class="font-semibold">不明な薬</span>
+                                                                        @endif
+                                                                    </span>
+                                                                    {{-- 服用状況の表示 --}}
+                                                                    <span class="ml-auto flex items-center">
+                                                                        @if ($record->is_completed)
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-2 mr-1 text-green-600"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                                                                            <span class="text-green-600">服用済み</span>
+                                                                        @else
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle mr-1 text-red-600"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                                                                            <span class="text-red-600">未服用</span>
+                                                                            @if ($record->reason_not_taken) <span class="ml-1 text-xs text-gray-600">(理由: {{ Str::limit($record->reason_not_taken, 20) }})</span> @endif
+                                                                        @endif
+                                                                    </span>
+                                                                </li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </div>
                                                 @endforeach
-                                            </ul>
+                                            </div>
+                                            {{-- ★★★ここまで追加★★★ --}}
                                         </div>
                                     @endif
                                 @endforeach

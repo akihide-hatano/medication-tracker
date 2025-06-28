@@ -109,41 +109,56 @@ class PostController extends Controller
      * @param  \App\Models\Post  $post
      * @return \Illuminate\Contracts\View\View
      */
-    public function show(Post $post)
+  public function show(Post $post)
     {
-        // postMedicationRecords リレーションをロードする際に、
-        // medication と timingTag リレーションも同時にロードします。
-        // timingTag リレーションを通じて category_name と category_order にアクセスできるようになります。
         $post->load(['user', 'postMedicationRecords.medication', 'postMedicationRecords.timingTag']);
 
-        // 服薬記録をカテゴリ名でグループ化し、カテゴリと薬の名前でソート
-        $categorizedMedicationRecords = $post->postMedicationRecords
-            // まずはカテゴリの表示順でソート
+        // 服薬記録を「カテゴリ名」と「詳細タイミング名」の二段階でグループ化
+        // 最終的なデータ構造:
+        // [
+        //     'カテゴリ名A' => [
+        //         '詳細タイミング名X' => [record1, record2],
+        //         '詳細タイミング名Y' => [record3],
+        //     ],
+        //     'カテゴリ名B' => [
+        //         '詳細タイミング名Z' => [record4, record5],
+        //     ],
+        // ]
+        $nestedCategorizedMedicationRecords = $post->postMedicationRecords
+            // 最初に大カテゴリの順序でソート
             ->sortBy(function ($record) {
-                // timingTag リレーションが存在しない、または category_order がnullの場合に備えてデフォルト値を設定
                 return $record->timingTag->category_order ?? 999;
             })
-            // 次に、同じカテゴリ内で薬の名称でソート（アルファベット順など）
+            // 次に詳細タイミングの順序（timing_tag_id）でソート
+            ->sortBy(function ($record) {
+                return $record->timingTag->timing_tag_id ?? 999;
+            })
+            // 最後に薬の名称でソート
             ->sortBy(function ($record) {
                 return $record->medication->medication_name ?? '';
             })
-            // 最後に、カテゴリ名でグループ化
+            // category_name でグループ化
             ->groupBy(function ($record) {
-                // timingTag リレーションが存在しない、または category_name がnullの場合に備えてデフォルト値を設定
                 return $record->timingTag->category_name ?? '未分類';
+            })
+            // その後、各カテゴリ内のコレクションをさらに timing_name でグループ化
+            ->map(function ($categoryGroup) {
+                return $categoryGroup->groupBy(function ($record) {
+                    return $record->timingTag->timing_name ?? '不明なタイミング';
+                });
             });
-
 
         // 表示するカテゴリのリストを、category_orderでソートして取得します。
         // これをビューに渡し、外側のループの順序を制御します。
-        // '頓服' と 'その他' を含め、すべての定義済みカテゴリを取得します。
         $displayCategories = TimingTag::select('category_name', 'category_order')
-            ->distinct() // 重複するカテゴリ名を除外
-            ->whereNotNull('category_name') // category_nameがnullでないもののみ
-            ->orderBy('category_order') // category_orderでソート
+            ->distinct()
+            ->whereNotNull('category_name')
+            ->orderBy('category_order')
             ->get();
-        return view('posts.show', compact('post', 'categorizedMedicationRecords', 'displayCategories'));
+
+        return view('posts.show', compact('post', 'nestedCategorizedMedicationRecords', 'displayCategories'));
     }
+
 
     /**
      * 特定の投稿の編集フォームを表示
