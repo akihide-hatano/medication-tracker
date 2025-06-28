@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Collection; // Collection を使用する場合は必ずこの行が必要です
 use Carbon\Carbon;
 
 class PostController extends Controller
@@ -23,7 +24,6 @@ class PostController extends Controller
      */
     public function index(Request $request)
     {
-        // ★★★ここを修正：timingTags から timingTag に変更★★★
         $query = Post::with(['user', 'postMedicationRecords.medication', 'postMedicationRecords.timingTag'])
                     ->orderBy('post_date', 'desc');
 
@@ -59,12 +59,9 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        // バリデーションルールを直接 $request->validate() に記述
         $validatedData = $request->validate([
             'post_date' => ['required', 'date'],
             'content' => ['nullable', 'string', 'max:1000'],
-            // all_meds_taken が '0' (false) の場合に reason_not_taken を必須にする
-            // それ以外の場合は nullable
             'all_meds_taken' => ['required', 'boolean'],
             'reason_not_taken' => ['nullable', 'string', 'max:500', 'required_if:all_meds_taken,0'],
             'medications' => ['required', 'array', 'min:1'],
@@ -84,7 +81,6 @@ class PostController extends Controller
             $post->reason_not_taken = $validatedData['reason_not_taken'] ?? null;
             $post->save();
 
-            // medicationRecords をループして保存
             foreach ($validatedData['medications'] as $medicationRecord) {
                 $post->postMedicationRecords()->create([
                     'medication_id' => $medicationRecord['medication_id'],
@@ -95,9 +91,9 @@ class PostController extends Controller
 
             DB::commit();
             return redirect()->route('posts.index')->with('success', '新しい投稿が正常に作成されました！');
-        } catch (\Exception | \Throwable $e) { // 広範囲なエラーをキャッチ
+        } catch (\Exception | \Throwable $e) {
             DB::rollBack();
-            Log::error('投稿作成エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString()); // スタックトレースも出力
+            Log::error('投稿作成エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return redirect()->back()->withInput()->with('error', '投稿の作成中にエラーが発生しました。もう一度お試しください。');
         }
     }
@@ -109,56 +105,42 @@ class PostController extends Controller
      * @param  \App\Models\Post  $post
      * @return \Illuminate\Contracts\View\View
      */
-  public function show(Post $post)
+    public function show(Post $post)
     {
+        // 関連するリレーションをEagerロード
+        // postMedicationRecords.medication と postMedicationRecords.timingTag は必須
         $post->load(['user', 'postMedicationRecords.medication', 'postMedicationRecords.timingTag']);
 
-        // 服薬記録を「カテゴリ名」と「詳細タイミング名」の二段階でグループ化
-        // 最終的なデータ構造:
-        // [
-        //     'カテゴリ名A' => [
-        //         '詳細タイミング名X' => [record1, record2],
-        //         '詳細タイミング名Y' => [record3],
-        //     ],
-        //     'カテゴリ名B' => [
-        //         '詳細タイミング名Z' => [record4, record5],
-        //     ],
-        // ]
+        // TimingTag から category_name と category_order のユニークなリストを取得し、表示順を制御
+        $displayCategories = TimingTag::select('category_name', 'category_order')
+                                       ->distinct()
+                                       ->whereNotNull('category_name') // category_name が null のものは除外
+                                       ->orderBy('category_order')
+                                       ->get();
+
+        // 服薬記録を category_name でグループ化し、各グループ内で薬の名称でソートする
+        // ここで、$nestedCategorizedMedicationRecords は、[カテゴリ名 => Collection<PostMedicationRecord>] の構造になる
         $nestedCategorizedMedicationRecords = $post->postMedicationRecords
-            // 最初に大カテゴリの順序でソート
-            ->sortBy(function ($record) {
-                return $record->timingTag->category_order ?? 999;
+            ->filter(function ($record) {
+                // timingTag リレーションが存在し、かつ category_name が設定されているレコードのみを対象
+                return $record->timingTag && $record->timingTag->category_name !== null;
             })
-            // 次に詳細タイミングの順序（timing_tag_id）でソート
-            ->sortBy(function ($record) {
-                return $record->timingTag->timing_tag_id ?? 999;
-            })
-            // 最後に薬の名称でソート
-            ->sortBy(function ($record) {
-                return $record->medication->medication_name ?? '';
-            })
-            // category_name でグループ化
             ->groupBy(function ($record) {
-                return $record->timingTag->category_name ?? '未分類';
+                // timingTag の category_name で直接グループ化
+                return $record->timingTag->category_name;
             })
-            // その後、各カテゴリ内のコレクションをさらに timing_name でグループ化
-            ->map(function ($categoryGroup) {
-                return $categoryGroup->groupBy(function ($record) {
-                    return $record->timingTag->timing_name ?? '不明なタイミング';
+            ->map(function ($medicationRecordsInGroup) {
+                // 各カテゴリグループ内の薬を medication_name でソート
+                return $medicationRecordsInGroup->sortBy(function ($record) {
+                    return $record->medication->medication_name ?? '';
                 });
             });
 
-        // 表示するカテゴリのリストを、category_orderでソートして取得します。
-        // これをビューに渡し、外側のループの順序を制御します。
-        $displayCategories = TimingTag::select('category_name', 'category_order')
-            ->distinct()
-            ->whereNotNull('category_name')
-            ->orderBy('category_order')
-            ->get();
+        dd($nestedCategorizedMedicationRecords->toArray(), $displayCategories->toArray()); // デバッグが必要な場合のみコメント解除
+        dd($displayCategories->toArray()); // $displayCategoriesの中身を直接確認したい場合
 
         return view('posts.show', compact('post', 'nestedCategorizedMedicationRecords', 'displayCategories'));
     }
-
 
     /**
      * 特定の投稿の編集フォームを表示
@@ -172,20 +154,16 @@ class PostController extends Controller
         $medications = Medication::all();
         $timingTags = TimingTag::all();
 
-                // ★★★ここを修正します★★★
-        // PostMedicationRecord が単一の TimingTag に属するように変更
         $selectedMedications = $post->postMedicationRecords->mapWithKeys(function ($pmr) {
-            // PostMedicationRecordにtimingTagリレーションが存在し、それがTimingTagモデルを返すことを想定
-            $timingTag = $pmr->timingTag; // 単数形のリレーション名を使用
+            $timingTag = $pmr->timingTag;
 
             return [
-                // medication_id をキーにする
                 $pmr->medication_id => [
                     'id' => $pmr->medication_id,
                     'name' => $pmr->medication->medication_name,
-                    'timing_tag_id' => $pmr->timing_tag_id, // PostMedicationRecord から直接 timing_tag_id を取得
-                    'timing_name' => $timingTag ? $timingTag->timing_name : '不明', // timingTag が存在する場合のみ名前を取得
-                    'is_completed' => (bool)$pmr->is_completed, // PostMedicationRecord から直接 is_completed を取得
+                    'timing_tag_id' => $pmr->timing_tag_id,
+                    'timing_name' => $timingTag ? $timingTag->timing_name : '不明',
+                    'is_completed' => (bool)$pmr->is_completed,
                 ]
             ];
         })->toArray();
@@ -202,7 +180,6 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post)
     {
-        // ★★★修正: バリデーションルールを create/edit フォームの構造に合わせる★★★
         $validatedData = $request->validate([
             'post_date' => ['required', 'date'],
             'content' => ['nullable', 'string', 'max:1000'],
@@ -218,17 +195,13 @@ class PostController extends Controller
         try {
             $post->update([
                 'post_date' => $validatedData['post_date'],
-                'all_meds_taken' => $validatedData['all_meds_taken'], // バリデーション済みデータを使用
+                'all_meds_taken' => $validatedData['all_meds_taken'],
                 'reason_not_taken' => $validatedData['reason_not_taken'] ?? null,
                 'content' => $validatedData['content'] ?? null,
             ]);
 
-            // ★★★修正: 既存の PostMedicationRecord を全て削除してから新しいものを作成★★★
-            // PostMedicationRecord は Post に hasMany リレーションなので、
-            // 関連レコードを全て削除するには postMedicationRecords() メソッドに delete() をチェインする。
             $post->postMedicationRecords()->delete();
 
-            // 新しい PostMedicationRecord をループして作成
             foreach ($validatedData['medications'] as $medicationRecord) {
                 $post->postMedicationRecords()->create([
                     'medication_id' => $medicationRecord['medication_id'],
@@ -257,11 +230,8 @@ class PostController extends Controller
     {
         DB::beginTransaction();
         try {
-            // ★★★修正: `timingTags()->detach()` を削除し、関連レコードをまとめて削除★★★
-            // PostMedicationRecord は Post に hasMany リレーションなので、
-            // 関連レコードを全て削除するには postMedicationRecords() メソッドに delete() をチェインする。
             $post->postMedicationRecords()->delete();
-            $post->delete(); // Post自体を削除
+            $post->delete();
             DB::commit();
             return redirect()->route('posts.index')->with('success', '投稿が正常に削除されました！');
         } catch (\Exception | \Throwable $e) {
@@ -270,7 +240,6 @@ class PostController extends Controller
             return redirect()->back()->with('error', '投稿の削除中にエラーが発生しました。もう一度お試しください。');
         }
     }
-
 
     /**
      * 服薬状況をカレンダー形式で表示
@@ -285,7 +254,7 @@ class PostController extends Controller
         $month = $request->input('month', Carbon::now()->month);
         $date = Carbon::createFromDate($year, $month, 1);
 
-        $userId = 1; // とりあえず user_id が1のユーザーのデータを表示
+        $userId = 1;
 
         $userExists = User::where('id', $userId)->exists();
         if (!$userExists) {
@@ -293,15 +262,12 @@ class PostController extends Controller
              return redirect()->route('home')->with('error', 'カレンダー表示に必要なユーザーが見つかりません。');
         }
 
-        // postMedicationRecords.medication と postMedicationRecords.timingTag を eager load する
-        // ★ここを修正しました：PostMedicationRecordsのrelationもloadしてmedicationとtimingTagを取るように
         $posts = Post::with(['postMedicationRecords.medication', 'postMedicationRecords.timingTag'])
                      ->where('user_id', $userId)
                      ->whereMonth('post_date', $month)
                      ->whereYear('post_date', $year)
                      ->get();
 
-        // ★★★ここを修正：medicationStatusByDay の構造を JavaScript が期待するオブジェクト形式に戻す★★★
         $medicationStatusByDay = [];
         foreach ($posts as $post) {
             $day = Carbon::parse($post->post_date)->day;
@@ -312,8 +278,6 @@ class PostController extends Controller
             ];
 
             if ($post->all_meds_taken) {
-                // 服用完了の場合、関連する薬の名前のリストを取得
-                // 薬の名前は PostMedicationRecord ごとに TimingTag も含めて取得する形にするため、少しロジックを変更
                 $medicationInfo = [];
                 foreach ($post->postMedicationRecords as $record) {
                     $medName = $record->medication->medication_name ?? '不明な薬';
@@ -321,22 +285,19 @@ class PostController extends Controller
                     $isCompleted = $record->is_completed ? '完了' : '未完了';
                     $medicationInfo[] = "{$medName} ({$timingName}: {$isCompleted})";
                 }
-                $details['medications'] = $medicationInfo; // 全て服用済みの日には全薬の完了状況を詳細に表示
+                $details['medications'] = $medicationInfo;
             } else {
-                // 服用未完了の場合、理由を取得
                 $details['reason'] = $post->reason_not_taken;
-                // 未完了の場合も薬の情報を簡潔に表示したい場合はここに追加
             }
             $medicationStatusByDay[$day] = $details;
         }
-        // ★★★ここまで修正★★★
 
         return view('posts.calendar', compact('date', 'medicationStatusByDay'));
     }
 
- public function showDailyRecords(string $dateString)
+    public function showDailyRecords(string $dateString)
     {
-    try {
+        try {
             $date = Carbon::parse($dateString);
         } catch (\Exception $e) {
             return redirect()->route('posts.calendar')->with('error', '無効な日付が指定されました。');
@@ -349,11 +310,10 @@ class PostController extends Controller
              return redirect()->route('home')->with('error', '投稿詳細表示に必要なユーザーが見つかりません。');
         }
 
-        // ★★★ここを修正：timingTags から timingTag に変更★★★
         $posts = Post::with([
             'user',
             'postMedicationRecords.medication',
-            'postMedicationRecords.timingTag' // timingTag (単数形) をロード
+            'postMedicationRecords.timingTag'
         ])
         ->where('user_id', $userId)
         ->whereDate('post_date', $date)
@@ -361,5 +321,5 @@ class PostController extends Controller
         ->get();
 
         return view('posts.daily_detail', compact('posts', 'date'));
-        }
+    }
 }
