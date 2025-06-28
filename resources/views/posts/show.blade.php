@@ -64,27 +64,26 @@
                                 @foreach ($timingTags as $timingTag)
                                     {{-- 現在のタイミングタグに属する薬の記録があるか確認（コントローラーでグループ化されている） --}}
                                     @if ($groupedMedicationRecords->has($timingTag->timing_tag_id))
-                                        {{-- ここから背景色と境界線の色を動的に変更 --}}
-                                        <div class="p-4 rounded-lg shadow-sm
-                                            @if ($timingTag->timing_tag_id == 1) bg-blue-100 border-blue-200
-                                            @elseif ($timingTag->timing_tag_id == 2) bg-green-100 border-green-200
-                                            @elseif ($timingTag->timing_tag_id == 3) bg-yellow-100 border-yellow-200
-                                            @elseif ($timingTag->timing_tag_id == 4) bg-purple-100 border-purple-200
-                                            @else bg-gray-100 border-gray-200 @endif">
+                                        @php
+                                            $timingId = $timingTag->timing_tag_id;
+                                            // カスタムクラス名を動的に決定
+                                            $blockClass = "timing-block-id-{$timingId}";
+                                            $textColorClass = "timing-text-id-{$timingId}"; // 再追加
+                                            $iconColorClass = "timing-icon-id-{$timingId}"; // 再追加
+
+                                            // 定義されていないIDの場合はデフォルトクラスを適用
+                                            if (!in_array($timingId, [1, 2, 3, 4])) { // app.cssで定義したIDを列挙
+                                                $blockClass = "timing-block-default";
+                                                $textColorClass = "timing-text-default"; // 再追加
+                                                $iconColorClass = "timing-icon-default"; // 再追加
+                                            }
+                                        @endphp
+
+                                        <div class="p-4 rounded-lg shadow-sm {{ $blockClass }}">
                                             {{-- h4タグのテキスト色も動的に変更 --}}
-                                            <h4 class="text-md font-bold mb-3 flex items-center
-                                                @if ($timingTag->timing_tag_id == 1) text-blue-700
-                                                @elseif ($timingTag->timing_tag_id == 2) text-green-700
-                                                @elseif ($timingTag->timing_tag_id == 3) text-yellow-700
-                                                @elseif ($timingTag->timing_tag_id == 4) text-purple-700
-                                                @else text-gray-700 @endif">
-                                                {{-- SVGアイコンの色もタイミングに合わせて変更 (必要であれば) --}}
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucude-clock mr-2 
-                                                    @if ($timingTag->timing_tag_id == 1) text-blue-500
-                                                    @elseif ($timingTag->timing_tag_id == 2) text-green-500
-                                                    @elseif ($timingTag->timing_tag_id == 3) text-yellow-500
-                                                    @elseif ($timingTag->timing_tag_id == 4) text-purple-500
-                                                    @else text-gray-500 @endif">
+                                            <h4 class="text-md font-bold mb-3 flex items-center {{ $textColorClass }}">
+                                                {{-- SVGアイコンの色もタイミングに合わせて変更 --}}
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock mr-2 {{ $iconColorClass }}">
                                                     <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                                                 </svg>
                                                 {{ $timingTag->timing_name }}

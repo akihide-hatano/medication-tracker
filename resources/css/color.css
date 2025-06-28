@@ -1,0 +1,55 @@
+/* resources/css/color.css */
+/* timing_tag_id = 1 (例: 朝食前) */
+.timing-block-id-1 {
+    @apply bg-blue-100 border-blue-200;
+}
+.timing-text-id-1 {
+    @apply text-blue-700;
+}
+.timing-icon-id-1 {
+    @apply text-blue-500;
+}
+
+/* timing_tag_id = 2 (例: 朝食後) */
+.timing-block-id-2 {
+    @apply bg-green-100 border-green-200;
+}
+.timing-text-id-2 {
+    @apply text-green-700;
+}
+.timing-icon-id-2 {
+    @apply text-green-500;
+}
+
+/* timing_tag_id = 3 (例: 昼食前) */
+.timing-block-id-3 {
+    @apply bg-yellow-100 border-yellow-200;
+}
+.timing-text-id-3 {
+    @apply text-yellow-700;
+}
+.timing-icon-id-3 {
+    @apply text-yellow-500;
+}
+
+/* timing_tag_id = 4 (例: 昼食後) */
+.timing-block-id-4 {
+    @apply bg-purple-100 border-purple-200;
+}
+.timing-text-id-4 {
+    @apply text-purple-700;
+}
+.timing-icon-id-4 {
+    @apply text-purple-500;
+}
+
+/* その他のタイミングタグIDや定義されていない場合のデフォルト色 */
+.timing-block-default {
+    @apply bg-gray-100 border-gray-200;
+}
+.timing-text-default {
+    @apply text-gray-700;
+}
+.timing-icon-default {
+    @apply text-gray-500;
+}
