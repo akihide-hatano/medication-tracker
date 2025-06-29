@@ -45,7 +45,7 @@
                         {{-- 全ての薬を服用済みチェックボックス --}}
                         <div class="mb-4 flex items-center">
                             <input type="hidden" name="all_meds_taken" value="0">
-                            <input type="checkbox" name="all_meds_taken" id="all_meds_taken" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1" {{ old('all_meds_taken', true) ? 'checked' : '' }}>
+                            <input type="checkbox" name="all_meds_taken" id="all_meds_taken" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1" {{ old('all_med_taken', true) ? 'checked' : '' }}>
                             <label for="all_meds_taken" class="ml-2 block text-sm font-medium text-gray-700">全ての薬を服用済み</label>
                         </div>
 
@@ -65,8 +65,11 @@
                                 {{-- 以前の入力値があればここに再表示 --}}
                                 @if (old('medications'))
                                     @foreach (old('medications') as $index => $oldMedication)
-                                        <div class="medication-record-item p-4 mb-3 border border-gray-200 rounded-md bg-white shadow-sm relative">
-                                            <button type="button" class="remove-medication-record absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg">&times;</button>
+                                        <div class="medication-record-item p-4 mb-3 border border-gray-200 rounded-md bg-white shadow-sm"> {{-- relative を削除 --}}
+                                            {{-- 修正: 削除ボタンをflexコンテナ内に移動し、absoluteを削除 --}}
+                                            <div class="flex justify-end mb-2"> {{-- ボタンを右端に寄せるためのflexコンテナ --}}
+                                                <button type="button" class="remove-medication-record text-sm text-red-500 hover:text-red-700 font-bold py-1 px-2 rounded-md border border-red-300 hover:bg-red-50">削除</button>
+                                            </div>
                                             <div class="mb-2">
                                                 <label for="medication_id_{{ $index }}" class="block text-sm font-medium text-gray-700">薬を選択</label>
                                                 <select name="medications[{{ $index }}][medication_id]" id="medication_id_{{ $index }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 medication-select" required>
@@ -150,7 +153,7 @@
 
             function createMedicationRecordItem(index, medicationId = '', timingTagId = '', isCompleted = false, initialTakenDosage = '') {
                 const itemDiv = document.createElement('div');
-                itemDiv.className = 'medication-record-item p-4 mb-3 border border-gray-200 rounded-md bg-white shadow-sm relative';
+                itemDiv.className = 'medication-record-item p-4 mb-3 border border-gray-200 rounded-md bg-white shadow-sm'; // relative を削除
                 
                 let medicationOptions = '<option value="">薬を選択してください</option>';
                 for (const medId in medicationsData) {
@@ -164,14 +167,17 @@
                 @endforeach
 
                 let takenDosageOptions = '<option value="">選択してください</option>';
-                for (let i = 1; i <= 10; i++) { // JavaScriptのfor文
+                for (let i = 1; i <= 10; i++) {
                     takenDosageOptions += `<option value="${i}錠">${i}錠</option>`;
                 }
                 takenDosageOptions += `<option value="その他">その他</option>`;
 
 
                 itemDiv.innerHTML = `
-                    <button type="button" class="remove-medication-record absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg">&times;</button>
+                    {{-- 修正: 削除ボタンをflexコンテナ内に移動し、absoluteを削除 --}}
+                    <div class="flex justify-end mb-2">
+                        <button type="button" class="remove-medication-record text-sm text-red-500 hover:text-red-700 font-bold py-1 px-2 rounded-md border border-red-300 hover:bg-red-50">削除</button>
+                    </div>
                     <div class="mb-2">
                         <label for="medication_id_${index}" class="block text-sm font-medium text-gray-700">薬を選択</label>
                         <select name="medications[${index}][medication_id]" id="medication_id_${index}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 medication-select" required>
@@ -212,31 +218,16 @@
                     completedCheckbox.checked = true;
                 }
 
-                // 以前に保存された taken_dosage の値があれば設定
                 if (initialTakenDosage && takenDosageSelect) {
                     takenDosageSelect.value = initialTakenDosage;
                 }
-
-                // ★このリスナーを削除または修正: 薬選択時に taken_dosage を自動設定しない
-                // medSelect.addEventListener('change', function() {
-                //     const selectedMedId = this.value;
-                //     if (selectedMedId && medicationsData[selectedMedId]) {
-                //         takenDosageSelect.value = medicationsData[selectedMedId].dosage;
-                //         if (takenDosageSelect.selectedIndex === -1) {
-                //             takenDosageSelect.value = 'その他';
-                //         }
-                //     } else {
-                //         takenDosageSelect.value = '';
-                //     }
-                // });
 
                 return itemDiv;
             }
 
             allMedsTakenCheckbox.addEventListener('change', toggleReasonNotTaken);
             addMedicationRecordButton.addEventListener('click', function () {
-                // 新規追加時に initialTakenDosage を渡さない（空のまま）
-                medicationRecordsContainer.appendChild(createMedicationRecordItem(medicationRecordIndex));
+                medicationRecordsContainer.appendChild(createMedicationRecordItem(medicationRecordIndex, '', '', false, ''));
                 medicationRecordIndex++;
             });
 
@@ -253,34 +244,6 @@
                 medicationRecordsContainer.appendChild(createMedicationRecordItem(medicationRecordIndex));
                 medicationRecordIndex++;
             }
-
-            // ★このループも修正: 薬選択時の自動設定リスナーを削除
-            medicationRecordsContainer.querySelectorAll('.medication-record-item').forEach(item => {
-                const medSelect = item.querySelector('.medication-select');
-                const takenDosageSelect = item.querySelector(`select[id^="taken_dosage_"]`);
-                if (medSelect && takenDosageSelect) {
-                    // medSelect.addEventListener('change', function() {
-                    //     const selectedMedId = this.value;
-                    //     if (selectedMedId && medicationsData[selectedMedId]) {
-                    //         takenDosageSelect.value = medicationsData[selectedMedId].dosage;
-                    //         if (takenDosageSelect.selectedIndex === -1) {
-                    //             takenDosageSelect.value = 'その他';
-                    //         }
-                    //     } else {
-                    //         takenDosageSelect.value = '';
-                    //     }
-                    // });
-                    // if (medSelect.value && !takenDosageSelect.value) {
-                    //      const selectedMedId = medSelect.value;
-                    //      if (selectedMedId && medicationsData[selectedMedId]) {
-                    //          takenDosageSelect.value = medicationsData[selectedMedId].dosage;
-                    //          if (takenDosageSelect.selectedIndex === -1) {
-                    //              takenDosageSelect.value = 'その他';
-                    //          }
-                    //      }
-                    // }
-                }
-            });
         });
     </script>
 </x-app-layout>
