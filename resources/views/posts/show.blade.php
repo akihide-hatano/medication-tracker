@@ -71,29 +71,34 @@
                                             $textColorClass = "category-text-{$categoryName}";
                                             $iconColorClass = "category-icon-{$categoryName}";
 
-                                            // カテゴリごとのアイコン設定
+                                            // カテゴリごとのアイコン設定 (SVGからIMGタグに変更)
                                             $categoryIcon = '';
+                                            $iconBaseClass = 'w-6 h-6 mr-2'; // TailwindCSSでサイズとマージンを設定
                                             switch ($categoryName) {
                                                 case '朝':
-                                                    $categoryIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-medium mr-2"><circle cx="12" cy="12" r="4"/><path d="M12 4v1"/><path d="M12 19v1"/><path d="M5 12H4"/><path d="M20 12h-1"/><path d="M17.8 6.2l-.7-.7"/><path d="M6.2 17.8l-.7-.7"/><path d="M17.8 17.8l-.7-.7"/><path d="M6.2 6.2l-.7-.7"/></svg>';
+                                                    $categoryIcon = '<img src="' . asset('images/morning.png') . '" alt="朝" class="' . $iconBaseClass . '">';
                                                     break;
                                                 case '昼':
-                                                    $categoryIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun mr-2"><circle cx="12" cy="12" r="8"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M6.34 17.66l-1.41 1.41"/></svg>';
+                                                    $categoryIcon = '<img src="' . asset('images/noon.png') . '" alt="昼" class="' . $iconBaseClass . '">';
                                                     break;
                                                 case '夕':
-                                                    $categoryIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cloud-sun mr-2"><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M6.34 17.66l-1.41 1.41"/></svg>';
+                                                    // ★ ここを `evenig.png` または `evening.png` に合わせる
+                                                    $categoryIcon = '<img src="' . asset('images/evenig.png') . '" alt="夕" class="' . $iconBaseClass . '">';
                                                     break;
                                                 case '寝る前':
-                                                    $categoryIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon-star mr-2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/><path d="M17.5 1.4L19.1 5 22.6 6.6 19.1 8.2 17.5 11.6 15.9 8.2 12.4 6.6 15.9 5Z"/></svg>';
+                                                    $categoryIcon = '<img src="' . asset('images/night.png') . '" alt="寝る前" class="' . $iconBaseClass . '">';
                                                     break;
                                                 case '頓服':
-                                                    $categoryIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucude-pill mr-2"><path d="m10.5 20.5 9.5-9.5a4.5 4.5 0 0 0-7.5-7.5L3.5 13.5a4.5 4.5 0 0 0 7.5 7.5Z"/><path d="m14 14 3 3"/><path d="m15 6 3-3"/><path d="m2 22 1-1"/><path d="m19 5 1-1"/></svg>';
+                                                    // ★ 頓服のアイコン画像名が不明なため、適当な名前 `prn.png` を仮定
+                                                    $categoryIcon = '<img src="' . asset('images/prn.png') . '" alt="頓服" class="' . $iconBaseClass . '">';
                                                     break;
                                                 case 'その他':
-                                                    $categoryIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-more-horizontal mr-2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>';
+                                                    // ★ その他のアイコン画像名が不明なため、適当な名前 `other.png` を仮定
+                                                    $categoryIcon = '<img src="' . asset('images/other.png') . '" alt="その他" class="' . $iconBaseClass . '">';
                                                     break;
                                                 default:
-                                                    $categoryIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-help mr-2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>';
+                                                    // ★ デフォルトのアイコン画像名が不明なため、適当な名前 `default.png` を仮定
+                                                    $categoryIcon = '<img src="' . asset('images/default.png') . '" alt="デフォルト" class="' . $iconBaseClass . '">';
                                                     break;
                                             }
                                         @endphp
@@ -126,7 +131,7 @@
                                                                     {{-- 服用状況の表示 --}}
                                                                     <span class="ml-auto flex items-center">
                                                                         @if ($record->is_completed)
-                                                                            {{-- 〇アイコンに変更 --}}
+                                                                            {{-- 〇アイコン --}}
                                                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle mr-1 text-green-600"><circle cx="12" cy="12" r="10"/></svg>
                                                                         @else
                                                                             {{-- ×アイコン --}}
