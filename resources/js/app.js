@@ -12,7 +12,5 @@ window.Alpine = Alpine;
 Alpine.start();
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ★★★ここを修正★★★
     createIcons({ icons }); // icons オブジェクトを引数として渡す
-    // ★★★ここまで修正★★★
 });
