@@ -159,14 +159,14 @@
                 }
 
                 let timingTagOptions = '<option value="">タイミングを選択してください</option>';
-                @foreach ($timingTags as $timingTag) // timingTagsがPHP変数として利用可能であることを確認
+                @foreach ($timingTags as $timingTag)
                     timingTagOptions += `<option value="{{ $timingTag->timing_tag_id }}">{{ $timingTag->timing_name }}</option>`;
                 @endforeach
 
                 let takenDosageOptions = '<option value="">選択してください</option>';
-                @for ($i = 1; $i <= 10; $i++)
-                    takenDosageOptions += `<option value="${{ $i }}錠">{{ $i }}錠</option>`;
-                @endfor
+                for (let i = 1; i <= 10; i++) { // JavaScriptのfor文
+                    takenDosageOptions += `<option value="${i}錠">${i}錠</option>`;
+                }
                 takenDosageOptions += `<option value="その他">その他</option>`;
 
 
@@ -212,27 +212,30 @@
                     completedCheckbox.checked = true;
                 }
 
+                // 以前に保存された taken_dosage の値があれば設定
                 if (initialTakenDosage && takenDosageSelect) {
                     takenDosageSelect.value = initialTakenDosage;
                 }
 
-                medSelect.addEventListener('change', function() {
-                    const selectedMedId = this.value;
-                    if (selectedMedId && medicationsData[selectedMedId]) {
-                        takenDosageSelect.value = medicationsData[selectedMedId].dosage;
-                        if (takenDosageSelect.selectedIndex === -1) {
-                            takenDosageSelect.value = 'その他';
-                        }
-                    } else {
-                        takenDosageSelect.value = '';
-                    }
-                });
+                // ★このリスナーを削除または修正: 薬選択時に taken_dosage を自動設定しない
+                // medSelect.addEventListener('change', function() {
+                //     const selectedMedId = this.value;
+                //     if (selectedMedId && medicationsData[selectedMedId]) {
+                //         takenDosageSelect.value = medicationsData[selectedMedId].dosage;
+                //         if (takenDosageSelect.selectedIndex === -1) {
+                //             takenDosageSelect.value = 'その他';
+                //         }
+                //     } else {
+                //         takenDosageSelect.value = '';
+                //     }
+                // });
 
                 return itemDiv;
             }
 
             allMedsTakenCheckbox.addEventListener('change', toggleReasonNotTaken);
             addMedicationRecordButton.addEventListener('click', function () {
+                // 新規追加時に initialTakenDosage を渡さない（空のまま）
                 medicationRecordsContainer.appendChild(createMedicationRecordItem(medicationRecordIndex));
                 medicationRecordIndex++;
             });
@@ -251,30 +254,31 @@
                 medicationRecordIndex++;
             }
 
+            // ★このループも修正: 薬選択時の自動設定リスナーを削除
             medicationRecordsContainer.querySelectorAll('.medication-record-item').forEach(item => {
                 const medSelect = item.querySelector('.medication-select');
                 const takenDosageSelect = item.querySelector(`select[id^="taken_dosage_"]`);
                 if (medSelect && takenDosageSelect) {
-                    medSelect.addEventListener('change', function() {
-                        const selectedMedId = this.value;
-                        if (selectedMedId && medicationsData[selectedMedId]) {
-                            takenDosageSelect.value = medicationsData[selectedMedId].dosage;
-                            if (takenDosageSelect.selectedIndex === -1) {
-                                takenDosageSelect.value = 'その他';
-                            }
-                        } else {
-                            takenDosageSelect.value = '';
-                        }
-                    });
-                    if (medSelect.value && !takenDosageSelect.value) {
-                         const selectedMedId = medSelect.value;
-                         if (selectedMedId && medicationsData[selectedMedId]) {
-                             takenDosageSelect.value = medicationsData[selectedMedId].dosage;
-                             if (takenDosageSelect.selectedIndex === -1) {
-                                 takenDosageSelect.value = 'その他';
-                             }
-                         }
-                    }
+                    // medSelect.addEventListener('change', function() {
+                    //     const selectedMedId = this.value;
+                    //     if (selectedMedId && medicationsData[selectedMedId]) {
+                    //         takenDosageSelect.value = medicationsData[selectedMedId].dosage;
+                    //         if (takenDosageSelect.selectedIndex === -1) {
+                    //             takenDosageSelect.value = 'その他';
+                    //         }
+                    //     } else {
+                    //         takenDosageSelect.value = '';
+                    //     }
+                    // });
+                    // if (medSelect.value && !takenDosageSelect.value) {
+                    //      const selectedMedId = medSelect.value;
+                    //      if (selectedMedId && medicationsData[selectedMedId]) {
+                    //          takenDosageSelect.value = medicationsData[selectedMedId].dosage;
+                    //          if (takenDosageSelect.selectedIndex === -1) {
+                    //              takenDosageSelect.value = 'その他';
+                    //          }
+                    //      }
+                    // }
                 }
             });
         });
