@@ -47,6 +47,9 @@ class PostController extends Controller
     {
         $medications = Medication::all();
         $timingTags = TimingTag::all();
+
+    // ここに追記して、dd() で中身を確認
+    // dd($medications); // ここで実行が止まり、データ構造が表示されます
         return view('posts.create', compact('medications', 'timingTags'));
     }
 
@@ -68,6 +71,7 @@ class PostController extends Controller
             'medications.*.medication_id' => ['required', 'exists:medications,medication_id'],
             'medications.*.timing_tag_id' => ['required', 'exists:timing_tags,timing_tag_id'],
             'medications.*.is_completed' => ['required', 'boolean'],
+            'medications.*.dosage' => 'nullable|string|max:255', // dosageは文字列として受け取る
         ]);
 
         try {
@@ -86,6 +90,8 @@ class PostController extends Controller
                     'medication_id' => $medicationRecord['medication_id'],
                     'timing_tag_id' => $medicationRecord['timing_tag_id'],
                     'is_completed' => $medicationRecord['is_completed'],
+                    'taken_dosage' => $medicationRecord['dosage'] ?? null, // ここで taken_dosage を保存
+                    'taken_at' => now(), // 服用日時を記録
                 ]);
             }
 
@@ -182,19 +188,17 @@ class PostController extends Controller
         $medications = Medication::all();
         $timingTags = TimingTag::all();
 
-        $selectedMedications = $post->postMedicationRecords->mapWithKeys(function ($pmr) {
-            $timingTag = $pmr->timingTag;
-
+        // ここを修正：taken_dosage を含める
+        $selectedMedications = $post->postMedicationRecords->map(function ($pmr) {
             return [
-                $pmr->medication_id => [
-                    'id' => $pmr->medication_id,
-                    'name' => $pmr->medication->medication_name,
-                    'timing_tag_id' => $pmr->timing_tag_id,
-                    'timing_name' => $timingTag ? $timingTag->timing_name : '不明',
-                    'is_completed' => (bool)$pmr->is_completed,
-                ]
+                'medication_id' => $pmr->medication_id,
+                'timing_tag_id' => $pmr->timing_tag_id,
+                'is_completed' => (bool)$pmr->is_completed,
+                'dosage' => $pmr->taken_dosage, // ここを追加
             ];
         })->toArray();
+        // dd($selectedMedications); // デバッグ用
+
         return view('posts.edit', compact('post', 'medications', 'timingTags', 'selectedMedications'));
     }
 
@@ -217,6 +221,7 @@ class PostController extends Controller
             'medications.*.medication_id' => ['required', 'exists:medications,medication_id'],
             'medications.*.timing_tag_id' => ['required', 'exists:timing_tags,timing_tag_id'],
             'medications.*.is_completed' => ['required', 'boolean'],
+            'medications.*.dosage' => 'nullable|string|max:255', // dosageは文字列として受け取る
         ]);
 
         DB::beginTransaction();
@@ -235,6 +240,8 @@ class PostController extends Controller
                     'medication_id' => $medicationRecord['medication_id'],
                     'timing_tag_id' => $medicationRecord['timing_tag_id'],
                     'is_completed' => $medicationRecord['is_completed'],
+                    'taken_dosage' => $medicationRecord['dosage'] ?? null, // ここで taken_dosage を保存
+                    'taken_at' => now(), // 更新日時を記録
                 ]);
             }
 
@@ -313,7 +320,9 @@ class PostController extends Controller
                     $medName = $record->medication->medication_name ?? '不明な薬';
                     $timingName = $record->timingTag->timing_name ?? 'タイミングなし';
                     $isCompleted = $record->is_completed ? '完了' : '未完了';
-                    $medicationInfo[] = "{$medName} ({$timingName}: {$isCompleted})";
+                    // taken_dosage を表示に含める
+                    $takenDosage = $record->taken_dosage ? " ({$record->taken_dosage})" : '';
+                    $medicationInfo[] = "{$medName}{$takenDosage} ({$timingName}: {$isCompleted})";
                 }
                 $details['medications'] = $medicationInfo;
             } else {
