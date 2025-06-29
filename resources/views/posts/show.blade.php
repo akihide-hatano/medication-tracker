@@ -82,22 +82,18 @@
                                                     $categoryIcon = '<img src="' . asset('images/noon.png') . '" alt="昼" class="' . $iconBaseClass . '">';
                                                     break;
                                                 case '夕':
-                                                    // ★ ここを `evenig.png` または `evening.png` に合わせる
                                                     $categoryIcon = '<img src="' . asset('images/evenig.png') . '" alt="夕" class="' . $iconBaseClass . '">';
                                                     break;
                                                 case '寝る前':
                                                     $categoryIcon = '<img src="' . asset('images/night.png') . '" alt="寝る前" class="' . $iconBaseClass . '">';
                                                     break;
                                                 case '頓服':
-                                                    // ★ 頓服のアイコン画像名が不明なため、適当な名前 `prn.png` を仮定
                                                     $categoryIcon = '<img src="' . asset('images/prn.png') . '" alt="頓服" class="' . $iconBaseClass . '">';
                                                     break;
                                                 case 'その他':
-                                                    // ★ その他のアイコン画像名が不明なため、適当な名前 `other.png` を仮定
                                                     $categoryIcon = '<img src="' . asset('images/other.png') . '" alt="その他" class="' . $iconBaseClass . '">';
                                                     break;
                                                 default:
-                                                    // ★ デフォルトのアイコン画像名が不明なため、適当な名前 `default.png` を仮定
                                                     $categoryIcon = '<img src="' . asset('images/default.png') . '" alt="デフォルト" class="' . $iconBaseClass . '">';
                                                     break;
                                             }
@@ -128,6 +124,13 @@
                                                                             <span class="font-semibold">不明な薬</span>
                                                                         @endif
                                                                     </span>
+
+                                                                    {{-- ★ここからtaken_dosageの表示を追加★ --}}
+                                                                    @if ($record->taken_dosage)
+                                                                        <span class="ml-2 text-gray-700">({{ $record->taken_dosage }})</span>
+                                                                    @endif
+                                                                    {{-- ★taken_dosageの表示追加ここまで★ --}}
+
                                                                     {{-- 服用状況の表示 --}}
                                                                     <span class="ml-auto flex items-center">
                                                                         @if ($record->is_completed)
