@@ -73,7 +73,7 @@
 
                                             // カテゴリごとのアイコン設定 (SVGからIMGタグに変更)
                                             $categoryIcon = '';
-                                            $iconBaseClass = 'w-6 h-6 mr-2'; // TailwindCSSでサイズとマージンを設定
+                                            $iconBaseClass = 'w-12 h-12 mr-2'; // TailwindCSSでサイズとマージンを設定
                                             switch ($categoryName) {
                                                 case '朝':
                                                     $categoryIcon = '<img src="' . asset('images/morning.png') . '" alt="朝" class="' . $iconBaseClass . '">';
@@ -114,8 +114,7 @@
                                                             @foreach ($recordsInTiming as $record)
                                                                 <li class="flex items-center">
                                                                     {{-- アイコンと薬の情報を表示 --}}
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pill mr-2 text-purple-500 flex-shrink-0"><path d="m10.5 20.5 9.5-9.5a4.5 4.5 0 0 0-7.5-7.5L3.5 13.5a4.5 4.5 0 0 0 7.5 7.5Z"/><path d="m14 14 3 3"/><path d="m15 6 3-3"/><path d="m2 22 1-1"/><path d="m19 5 1-1"/></svg>
-                                                                    <span>
+                                                                    <span class="ml-4 text-lg">
                                                                         @if ($record->medication)
                                                                             <a href="{{ route('medications.show', ['medication' => $record->medication->medication_id, 'from_post_id' => $post->post_id]) }}" class="font-semibold text-blue-600 hover:text-blue-800 hover:underline">
                                                                                 {{ $record->medication->medication_name ?? '不明な薬' }}
@@ -127,7 +126,7 @@
 
                                                                     {{-- ★ここからtaken_dosageの表示を追加★ --}}
                                                                     @if ($record->taken_dosage)
-                                                                        <span class="ml-2 text-gray-700">({{ $record->taken_dosage }})</span>
+                                                                        <span class="ml-2 text-gray-700 text-lg">{{ $record->taken_dosage }}</span>
                                                                     @endif
                                                                     {{-- ★taken_dosageの表示追加ここまで★ --}}
 
