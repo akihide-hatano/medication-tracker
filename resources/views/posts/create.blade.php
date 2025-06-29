@@ -57,7 +57,7 @@
 
                         {{-- 動的な薬の服用記録セクション --}}
                         <div class="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <h3 class="text-lg font-semibold text-gray-800 flex items-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pills mr-2 text-purple-600"><path d="M12 2a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3"/><path d="M2 2a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a3 3 0 0 0-3 3v2a3 3 0 0 0 3 3"/></svg>
                                 薬の服用記録
                             </h3>
@@ -67,7 +67,7 @@
                                     @foreach (old('medications') as $index => $oldMedication)
                                         <div class="medication-record-item p-4 mb-3 border border-gray-200 rounded-md bg-white shadow-sm"> {{-- relative を削除 --}}
                                             {{-- 修正: 削除ボタンをflexコンテナ内に移動し、absoluteを削除 --}}
-                                            <div class="flex justify-end mb-2"> {{-- ボタンを右端に寄せるためのflexコンテナ --}}
+                                            <div class="flex justify-end"> {{-- ボタンを右端に寄せるためのflexコンテナ --}}
                                                 <button type="button" class="remove-medication-record text-sm text-red-500 hover:text-red-700 font-bold py-1 px-2 rounded-md border border-red-300 hover:bg-red-50">削除</button>
                                             </div>
                                             <div class="mb-2">
