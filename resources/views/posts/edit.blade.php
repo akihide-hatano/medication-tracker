@@ -158,7 +158,7 @@
             function createMedicationRecordItem(index, medicationId = '', timingTagId = '', isCompleted = false, initialTakenDosage = '') {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'medication-record-item p-4 mb-3 border border-gray-200 rounded-md bg-white shadow-sm relative';
-                
+
                 let medicationOptions = '<option value="">薬を選択してください</option>';
                 for (const medId in medicationsData) {
                     const medication = medicationsData[medId];
