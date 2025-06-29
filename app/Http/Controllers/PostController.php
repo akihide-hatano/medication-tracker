@@ -292,8 +292,7 @@ class PostController extends Controller
             }
         }
                // ★★★ ここに dd() を追加 ★★★
-         dump($medications); // まずは medications を確認
-         dump($medications->first()); // もしコレクションなら最初の要素を確認
+        dd($nestedCategorizedMedicationRecords);
 
         return view('posts.edit', compact('post', 'medications', 'timingTags', 'nestedCategorizedMedicationRecords', 'displayCategories'));
     }
