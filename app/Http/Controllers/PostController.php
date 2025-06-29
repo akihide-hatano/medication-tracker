@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Models\Medication;
 use App\Models\TimingTag;
+use App\Models\TimingCategory; // TimingCategoryモデルはリレーション経由で使う可能性があるので残しておきます
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -47,7 +48,56 @@ class PostController extends Controller
     {
         $medications = Medication::all();
         $timingTags = TimingTag::all();
-        return view('posts.create', compact('medications', 'timingTags'));
+        // カテゴリごとの表示順を定義 (category_orderを使ってユニークなカテゴリを取得)
+        // TimingTagテーブルにcategory_nameとcategory_orderが直接存在すると仮定
+        $displayCategories = TimingTag::whereNotNull('category_name')
+            ->orderBy('category_order')
+            ->get()
+            ->unique('category_name')
+            ->values();
+
+        // createの場合は既存のレコードはないので、old('medications') のみで整形
+        $nestedCategorizedMedicationRecords = collect();
+
+        if (old('medications')) {
+            $recordsToDisplay = old('medications');
+            $recordsCollection = collect($recordsToDisplay);
+
+            foreach ($recordsCollection as $index => $recordData) {
+                $timingTag = null;
+                $medication = null;
+
+                if (isset($recordData['timing_tag_id'])) {
+                    $timingTag = TimingTag::find($recordData['timing_tag_id']);
+                }
+                if (isset($recordData['medication_id'])) {
+                    $medication = Medication::find($recordData['medication_id']);
+                }
+
+                // $timingTag->category_name が存在することを前提
+                if ($timingTag && $timingTag->category_name) {
+                    $categoryName = $timingTag->category_name;
+                    $timingName = $timingTag->timing_name;
+
+                    $recordData['medication'] = $medication ? $medication->toArray() : null;
+                    $recordData['timing_tag'] = $timingTag->toArray();
+                    // timing_tag が category_name を直接持つ場合、categoryリレーションは不要
+                    // $recordData['timing_tag']['category'] = $timingTag->category->toArray();
+
+                    $recordData['original_index'] = $index;
+
+                    if (!$nestedCategorizedMedicationRecords->has($categoryName)) {
+                        $nestedCategorizedMedicationRecords->put($categoryName, collect());
+                    }
+                    if (!$nestedCategorizedMedicationRecords->get($categoryName)->has($timingName)) {
+                        $nestedCategorizedMedicationRecords->get($categoryName)->put($timingName, collect());
+                    }
+                    $nestedCategorizedMedicationRecords->get($categoryName)->get($timingName)->push($recordData);
+                }
+            }
+        }
+
+        return view('posts.create', compact('medications', 'timingTags', 'nestedCategorizedMedicationRecords', 'displayCategories'));
     }
 
     /**
@@ -68,14 +118,14 @@ class PostController extends Controller
             'medications.*.medication_id' => ['required', 'exists:medications,medication_id'],
             'medications.*.timing_tag_id' => ['required', 'exists:timing_tags,timing_tag_id'],
             'medications.*.is_completed' => ['required', 'boolean'],
-            'medications.*.taken_dosage' => 'nullable|string|max:255', // ここを taken_dosage に変更
+            'medications.*.taken_dosage' => 'nullable|string|max:255',
         ]);
 
         try {
             DB::beginTransaction();
 
             $post = new Post();
-            $post->user_id = Auth::id(); // 認証ユーザーのIDをセット
+            $post->user_id = Auth::id();
             $post->post_date = $validatedData['post_date'];
             $post->content = $validatedData['content'] ?? null;
             $post->all_meds_taken = $validatedData['all_meds_taken'];
@@ -87,8 +137,8 @@ class PostController extends Controller
                     'medication_id' => $medicationRecord['medication_id'],
                     'timing_tag_id' => $medicationRecord['timing_tag_id'],
                     'is_completed' => $medicationRecord['is_completed'],
-                    'taken_dosage' => $medicationRecord['taken_dosage'] ?? null, // ここで taken_dosage を保存
-                    'taken_at' => now(), // 服用日時を記録
+                    'taken_dosage' => $medicationRecord['taken_dosage'] ?? null,
+                    'taken_at' => now(),
                 ]);
             }
 
@@ -111,72 +161,53 @@ class PostController extends Controller
     public function show(Post $post)
     {
         // 関連するリレーションをEagerロード
-        // postMedicationRecords リレーション内で taken_dosage カラムを明示的に指定
+        // TimingTagがcategory_nameを直接持っていると仮定し、TimingCategoryリレーションのロードは不要
         $post->load([
             'user',
             'postMedicationRecords.medication',
-            'postMedicationRecords.timingTag',
-            // ここを追加: postMedicationRecords の taken_dosage カラムもロードするように明示的に指定
+            'postMedicationRecords.timingTag', // .category は不要と仮定
             'postMedicationRecords' => function ($query) {
                 $query->select(['post_id', 'medication_id', 'timing_tag_id', 'is_completed', 'taken_dosage', 'taken_at', 'reason_not_taken']);
             }
         ]);
 
-
         // TimingTagをcategory_orderとtiming_tag_idで事前にソートして取得
-        // これがカテゴリおよびその中のタイミングの表示順を制御する「マスター」順序となる
+        // TimingTagがcategory_nameを直接持っていると仮定
         $orderedTimingTags = TimingTag::orderBy('category_order')
-                                    ->orderBy('timing_tag_id') // timing_nameではなくIDでソートして一貫性を保つ
+                                    ->orderBy('timing_tag_id')
                                     ->get();
 
-        // 最終的にビューに渡す、ネストされた服薬記録のコレクションを初期化
-        // 構造:
-        // [
-        //     'カテゴリ名A' => [
-        //         'timing_name_X' => Collection<PostMedicationRecord>,
-        //         'timing_name_Y' => Collection<PostMedicationRecord>,
-        //     ],
-        //     'カテゴリ名B' => [
-        //         'timing_name_Z' => Collection<PostMedicationRecord>,
-        //     ],
-        // ]
         $nestedCategorizedMedicationRecords = new Collection();
 
         // orderedTimingTagsの順序でループし、データを構築
         foreach ($orderedTimingTags as $timingTag) {
+            // TimingTagがcategory_nameを直接持っていると仮定し、そのままアクセス
             $categoryName = $timingTag->category_name ?? '未分類';
-            $timingName = $timingTag->timing_name ?? '不明なタイミング'; // 詳細タイミング名
+            $timingName = $timingTag->timing_name ?? '不明なタイミング';
 
             // 現在の TimingTag に一致する PostMedicationRecord をフィルタリング
             $recordsForThisTiming = $post->postMedicationRecords->filter(function ($record) use ($timingTag) {
-                // record->timingTag が存在し、かつ timing_tag_id が一致する場合
                 return $record->timingTag && $record->timingTag->timing_tag_id === $timingTag->timing_tag_id;
             })
-            // この詳細タイミング内の薬を薬の名称でソート
             ->sortBy(function ($record) {
                 return $record->medication->medication_name ?? '';
             });
 
-            // 記録がある場合のみ、ネストされたコレクションに追加
-            // または、空のタイミングも表示したい場合は常にputする
-            if ($recordsForThisTiming->isNotEmpty()) { // 記録があるタイミングのみ表示する場合
-            // if (true) { // 全てのタイミングを表示する場合 (記録がなくても)
-                // カテゴリが存在しない場合は新しく Collection を作成して追加
+            if ($recordsForThisTiming->isNotEmpty()) {
                 if (!$nestedCategorizedMedicationRecords->has($categoryName)) {
                     $nestedCategorizedMedicationRecords->put($categoryName, new Collection());
                 }
-                // カテゴリ内のコレクションに、この詳細タイミングの記録を追加
                 $nestedCategorizedMedicationRecords->get($categoryName)->put($timingName, $recordsForThisTiming);
             }
         }
 
         // Bladeで表示するカテゴリのリストを、category_orderでソートして取得
-        // DISTINCT ON のエラーを回避するため、get() の後に unique() を適用する
+        // TimingTagがcategory_nameとcategory_orderを直接持っていると仮定し、それらを使用
         $displayCategories = TimingTag::whereNotNull('category_name')
-            ->orderBy('category_order') // まず category_order でソート
-            ->get() // 全てのレコードを取得
-            ->unique('category_name') // その後、category_name でユニークなものだけを残す
-            ->values(); // コレクションのインデックスをリセット
+            ->orderBy('category_order')
+            ->get()
+            ->unique('category_name')
+            ->values();
 
         return view('posts.show', compact('post', 'nestedCategorizedMedicationRecords', 'displayCategories'));
     }
@@ -190,22 +221,83 @@ class PostController extends Controller
      */
     public function edit(Post $post)
     {
+        // 投稿の所有者でない場合はアクセスを拒否
+        if ($post->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $medications = Medication::all();
         $timingTags = TimingTag::all();
 
-        // ここを修正：taken_dosage を含める
-        $selectedMedications = $post->postMedicationRecords->map(function ($pmr) {
-            return [
-                'medication_id' => $pmr->medication_id,
-                'timing_tag_id' => $pmr->timing_tag_id,
-                'is_completed' => (bool)$pmr->is_completed,
-                'taken_dosage' => $pmr->taken_dosage, // ここを追加
-            ];
-        })->toArray();
-        // dd($selectedMedications); // デバッグ用
+        // カテゴリごとの表示順を定義 (category_orderを使ってユニークなカテゴリを取得)
+        // TimingTagテーブルにcategory_nameとcategory_orderが直接存在すると仮定
+        $displayCategories = TimingTag::whereNotNull('category_name')
+            ->orderBy('category_order')
+            ->get()
+            ->unique('category_name')
+            ->values();
 
-        return view('posts.edit', compact('post', 'medications', 'timingTags', 'selectedMedications'));
+        $nestedCategorizedMedicationRecords = collect();
+
+        // old('medications') があればそちらを優先（バリデーションエラー時の再表示用）
+        // なければ既存の服薬記録データを使用
+        $recordsToDisplay = old('medications', $post->postMedicationRecords->toArray());
+
+        $recordsCollection = collect($recordsToDisplay);
+
+        // showメソッドのロジックに近づけて、カテゴリとタイミングでネストされた構造を構築
+        // まず、全てのtimingTagsをカテゴリとタイミングの順でソート
+        $orderedTimingTags = TimingTag::orderBy('category_order')
+                                    ->orderBy('timing_tag_id')
+                                    ->get();
+
+        foreach ($orderedTimingTags as $timingTag) {
+            $categoryName = $timingTag->category_name ?? '未分類';
+            $timingName = $timingTag->timing_name ?? '不明なタイミング';
+
+            // 現在の TimingTag に一致する PostMedicationRecord をフィルタリング
+            // old() または既存のレコードからフィルタリング
+            $recordsForThisTiming = $recordsCollection->filter(function ($recordData) use ($timingTag) {
+                // $recordData が配列の場合とPostMedicationRecordオブジェクトの場合に対応
+                $recordTimingTagId = is_array($recordData) ? ($recordData['timing_tag_id'] ?? null) : ($recordData->timing_tag_id ?? null);
+                return $recordTimingTagId === $timingTag->timing_tag_id;
+            })
+            ->map(function ($recordData, $originalIndex) use ($medications, $timingTags) {
+                // old() の場合、リレーションデータがないため、ここで補完
+                $medication = Medication::find($recordData['medication_id'] ?? null);
+                $timingTag = TimingTag::find($recordData['timing_tag_id'] ?? null);
+
+                return [
+                    'medication_id' => $recordData['medication_id'] ?? null,
+                    'taken_dosage' => $recordData['taken_dosage'] ?? null,
+                    'timing_tag_id' => $recordData['timing_tag_id'] ?? null,
+                    'is_completed' => (bool)($recordData['is_completed'] ?? 0),
+                    'reason_not_taken' => $recordData['reason_not_taken'] ?? null,
+                    'original_index' => $originalIndex, // old() のインデックスを保持
+                    'medication' => $medication ? $medication->toArray() : null,
+                    'timing_tag' => $timingTag ? $timingTag->toArray() : null,
+                ];
+            })
+            // この詳細タイミング内の薬を薬の名称でソート
+            ->sortBy(function ($record) {
+                return $record['medication']['medication_name'] ?? '';
+            });
+
+            // 記録がある場合のみ、ネストされたコレクションに追加 (showと同じロジック)
+            if ($recordsForThisTiming->isNotEmpty()) {
+                if (!$nestedCategorizedMedicationRecords->has($categoryName)) {
+                    $nestedCategorizedMedicationRecords->put($categoryName, collect());
+                }
+                $nestedCategorizedMedicationRecords->get($categoryName)->put($timingName, $recordsForThisTiming);
+            }
+        }
+               // ★★★ ここに dd() を追加 ★★★
+         dump($medications); // まずは medications を確認
+         dump($medications->first()); // もしコレクションなら最初の要素を確認
+
+        return view('posts.edit', compact('post', 'medications', 'timingTags', 'nestedCategorizedMedicationRecords', 'displayCategories'));
     }
+
 
     /**
      * 特定の投稿をデータベースで更新
@@ -226,7 +318,7 @@ class PostController extends Controller
             'medications.*.medication_id' => ['required', 'exists:medications,medication_id'],
             'medications.*.timing_tag_id' => ['required', 'exists:timing_tags,timing_tag_id'],
             'medications.*.is_completed' => ['required', 'boolean'],
-            'medications.*.taken_dosage' => 'nullable|string|max:255', // taken_dosageは文字列として受け取る
+            'medications.*.taken_dosage' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
@@ -245,8 +337,8 @@ class PostController extends Controller
                     'medication_id' => $medicationRecord['medication_id'],
                     'timing_tag_id' => $medicationRecord['timing_tag_id'],
                     'is_completed' => $medicationRecord['is_completed'],
-                    'taken_dosage' => $medicationRecord['taken_dosage'] ?? null, // ここで taken_dosage を保存
-                    'taken_at' => now(), // 更新日時を記録
+                    'taken_dosage' => $medicationRecord['taken_dosage'] ?? null,
+                    'taken_at' => now(),
                 ]);
             }
 
@@ -294,7 +386,7 @@ class PostController extends Controller
         $month = $request->input('month', Carbon::now()->month);
         $date = Carbon::createFromDate($year, $month, 1);
 
-        $userId = 1;
+        $userId = Auth::id();
 
         $userExists = User::where('id', $userId)->exists();
         if (!$userExists) {
@@ -323,7 +415,6 @@ class PostController extends Controller
                     $medName = $record->medication->medication_name ?? '不明な薬';
                     $timingName = $record->timingTag->timing_name ?? 'タイミングなし';
                     $isCompleted = $record->is_completed ? '完了' : '未完了';
-                    // taken_dosage を表示に含める
                     $takenDosage = $record->taken_dosage ? " ({$record->taken_dosage})" : '';
                     $medicationInfo[] = "{$medName}{$takenDosage} ({$timingName}: {$isCompleted})";
                 }
@@ -341,11 +432,11 @@ class PostController extends Controller
     {
         try {
             $date = Carbon::parse($dateString);
-        } catch (\Exception $e) {
+        }  catch (\Exception $e) {
             return redirect()->route('posts.calendar')->with('error', '無効な日付が指定されました。');
         }
 
-        $userId = 1;
+        $userId = Auth::id();
 
         if (!User::where('id', $userId)->exists()) {
              Log::error("User ID {$userId} not found for daily records display.");
