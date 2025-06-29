@@ -47,9 +47,6 @@ class PostController extends Controller
     {
         $medications = Medication::all();
         $timingTags = TimingTag::all();
-
-    // ここに追記して、dd() で中身を確認
-    // dd($medications); // ここで実行が止まり、データ構造が表示されます
         return view('posts.create', compact('medications', 'timingTags'));
     }
 
@@ -71,7 +68,7 @@ class PostController extends Controller
             'medications.*.medication_id' => ['required', 'exists:medications,medication_id'],
             'medications.*.timing_tag_id' => ['required', 'exists:timing_tags,timing_tag_id'],
             'medications.*.is_completed' => ['required', 'boolean'],
-            'medications.*.dosage' => 'nullable|string|max:255', // dosageは文字列として受け取る
+            'medications.*.taken_dosage' => 'nullable|string|max:255', // ここを taken_dosage に変更
         ]);
 
         try {
@@ -90,7 +87,7 @@ class PostController extends Controller
                     'medication_id' => $medicationRecord['medication_id'],
                     'timing_tag_id' => $medicationRecord['timing_tag_id'],
                     'is_completed' => $medicationRecord['is_completed'],
-                    'taken_dosage' => $medicationRecord['dosage'] ?? null, // ここで taken_dosage を保存
+                    'taken_dosage' => $medicationRecord['taken_dosage'] ?? null, // ここで taken_dosage を保存
                     'taken_at' => now(), // 服用日時を記録
                 ]);
             }
@@ -114,7 +111,17 @@ class PostController extends Controller
     public function show(Post $post)
     {
         // 関連するリレーションをEagerロード
-        $post->load(['user', 'postMedicationRecords.medication', 'postMedicationRecords.timingTag']);
+        // postMedicationRecords リレーション内で taken_dosage カラムを明示的に指定
+        $post->load([
+            'user',
+            'postMedicationRecords.medication',
+            'postMedicationRecords.timingTag',
+            // ここを追加: postMedicationRecords の taken_dosage カラムもロードするように明示的に指定
+            'postMedicationRecords' => function ($query) {
+                $query->select(['post_id', 'medication_id', 'timing_tag_id', 'is_completed', 'taken_dosage', 'taken_at', 'reason_not_taken']);
+            }
+        ]);
+
 
         // TimingTagをcategory_orderとtiming_tag_idで事前にソートして取得
         // これがカテゴリおよびその中のタイミングの表示順を制御する「マスター」順序となる
@@ -171,8 +178,6 @@ class PostController extends Controller
             ->unique('category_name') // その後、category_name でユニークなものだけを残す
             ->values(); // コレクションのインデックスをリセット
 
-        // dd($nestedCategorizedMedicationRecords->toArray(), $displayCategories->toArray()); // デバッグが必要な場合のみコメント解除
-
         return view('posts.show', compact('post', 'nestedCategorizedMedicationRecords', 'displayCategories'));
     }
 
@@ -194,7 +199,7 @@ class PostController extends Controller
                 'medication_id' => $pmr->medication_id,
                 'timing_tag_id' => $pmr->timing_tag_id,
                 'is_completed' => (bool)$pmr->is_completed,
-                'dosage' => $pmr->taken_dosage, // ここを追加
+                'taken_dosage' => $pmr->taken_dosage, // ここを追加
             ];
         })->toArray();
         // dd($selectedMedications); // デバッグ用
@@ -221,7 +226,7 @@ class PostController extends Controller
             'medications.*.medication_id' => ['required', 'exists:medications,medication_id'],
             'medications.*.timing_tag_id' => ['required', 'exists:timing_tags,timing_tag_id'],
             'medications.*.is_completed' => ['required', 'boolean'],
-            'medications.*.dosage' => 'nullable|string|max:255', // dosageは文字列として受け取る
+            'medications.*.taken_dosage' => 'nullable|string|max:255', // taken_dosageは文字列として受け取る
         ]);
 
         DB::beginTransaction();
@@ -240,7 +245,7 @@ class PostController extends Controller
                     'medication_id' => $medicationRecord['medication_id'],
                     'timing_tag_id' => $medicationRecord['timing_tag_id'],
                     'is_completed' => $medicationRecord['is_completed'],
-                    'taken_dosage' => $medicationRecord['dosage'] ?? null, // ここで taken_dosage を保存
+                    'taken_dosage' => $medicationRecord['taken_dosage'] ?? null, // ここで taken_dosage を保存
                     'taken_at' => now(), // 更新日時を記録
                 ]);
             }
@@ -249,7 +254,6 @@ class PostController extends Controller
             return redirect()->route('posts.show', $post->post_id)->with('success', '投稿が正常に更新されました！');
         } catch (\Exception | \Throwable $e) {
             DB::rollBack();
-            // 修正箇所: 文字列連結の構文を修正
             Log::error('投稿更新エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return redirect()->back()->withInput()->with('error', '投稿の更新中にエラーが発生しました。もう一度お試しください。');
         }
@@ -272,7 +276,6 @@ class PostController extends Controller
             return redirect()->route('posts.index')->with('success', '投稿が正常に削除されました！');
         } catch (\Exception | \Throwable $e) {
             DB::rollBack();
-            // 修正箇所: 文字列連結の構文を修正
             Log::error('投稿削除エラー: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return redirect()->back()->with('error', '投稿の削除中にエラーが発生しました。もう一度お試しください。');
         }
