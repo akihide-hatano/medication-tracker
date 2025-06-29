@@ -78,10 +78,16 @@
                                                     @endforeach
                                                 </select>
                                             </div>
-                                            {{-- taken_dosage の入力フィールド --}}
+                                            {{-- taken_dosage のドロップダウンフィールド --}}
                                             <div class="mb-2">
-                                                <label for="dosage_{{ $index }}" class="block text-sm font-medium text-gray-700">服用量</label>
-                                                <input type="text" name="medications[{{ $index }}][dosage]" id="dosage_{{ $index }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="{{ old('medications.' . $index . '.dosage') }}" placeholder="例: 1錠, 5ml, 50mg">
+                                                <label for="taken_dosage_{{ $index }}" class="block text-sm font-medium text-gray-700">服用量</label>
+                                                <select name="medications[{{ $index }}][taken_dosage]" id="taken_dosage_{{ $index }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                    <option value="">選択してください</option>
+                                                    @for ($i = 1; $i <= 10; $i++)
+                                                        <option value="{{ $i }}錠" {{ (old('medications.' . $index . '.taken_dosage') == $i . '錠') ? 'selected' : '' }}>{{ $i }}錠</option>
+                                                    @endfor
+                                                    <option value="その他" {{ (old('medications.' . $index . '.taken_dosage') == 'その他') ? 'selected' : '' }}>その他</option>
+                                                </select>
                                             </div>
                                             <div class="mb-2">
                                                 <label for="timing_tag_id_{{ $index }}" class="block text-sm font-medium text-gray-700">服用タイミング</label>
@@ -128,50 +134,60 @@
             const medicationRecordsContainer = document.getElementById('medication_records_container');
             const addMedicationRecordButton = document.getElementById('add_medication_record');
 
-            // medicationsDataをJavaScriptで使用できるようにBladeから渡す
-            // medication_id をキーとして使用するように変更
             const medicationsData = @json($medications->keyBy('medication_id'));
 
-            let medicationRecordIndex = {{ old('medications') ? count(old('medications')) : 0 }}; // 以前の入力値があれば、その数からインデックスを開始
+            let medicationRecordIndex = {{ old('medications') ? count(old('medications')) : 0 }};
 
-            // 「全ての薬を服用済み」チェックボックスの表示切り替え関数
             function toggleReasonNotTaken() {
                 if (allMedsTakenCheckbox.checked) {
                     reasonNotTakenField.style.display = 'none';
                     const textarea = reasonNotTakenField.querySelector('textarea');
-                    if (textarea) textarea.value = ''; // 非表示にする際は中身をクリア
+                    if (textarea) textarea.value = '';
                 } else {
                     reasonNotTakenField.style.display = 'block';
                 }
             }
 
-            // 新しい薬の記録アイテムを作成する関数
-            function createMedicationRecordItem(index, medicationId = '', timingTagId = '', isCompleted = false, initialDosage = '') {
+            function createMedicationRecordItem(index, medicationId = '', timingTagId = '', isCompleted = false, initialTakenDosage = '') {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'medication-record-item p-4 mb-3 border border-gray-200 rounded-md bg-white shadow-sm relative';
+                
+                let medicationOptions = '<option value="">薬を選択してください</option>';
+                for (const medId in medicationsData) {
+                    const medication = medicationsData[medId];
+                    medicationOptions += `<option value="${medication.medication_id}">${medication.medication_name} (${medication.dosage})</option>`;
+                }
+
+                let timingTagOptions = '<option value="">タイミングを選択してください</option>';
+                @foreach ($timingTags as $timingTag) // timingTagsがPHP変数として利用可能であることを確認
+                    timingTagOptions += `<option value="{{ $timingTag->timing_tag_id }}">{{ $timingTag->timing_name }}</option>`;
+                @endforeach
+
+                let takenDosageOptions = '<option value="">選択してください</option>';
+                @for ($i = 1; $i <= 10; $i++)
+                    takenDosageOptions += `<option value="${{ $i }}錠">{{ $i }}錠</option>`;
+                @endfor
+                takenDosageOptions += `<option value="その他">その他</option>`;
+
+
                 itemDiv.innerHTML = `
                     <button type="button" class="remove-medication-record absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg">&times;</button>
                     <div class="mb-2">
                         <label for="medication_id_${index}" class="block text-sm font-medium text-gray-700">薬を選択</label>
                         <select name="medications[${index}][medication_id]" id="medication_id_${index}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 medication-select" required>
-                            <option value="">薬を選択してください</option>
-                            @foreach ($medications as $medication)
-                                <option value="{{ $medication->medication_id }}">{{ $medication->medication_name }} ({{ $medication->dosage }})</option>
-                            @endforeach
+                            ${medicationOptions}
                         </select>
                     </div>
-                    {{-- taken_dosage の入力フィールド --}}
                     <div class="mb-2">
-                        <label for="dosage_${index}" class="block text-sm font-medium text-gray-700">服用量</label>
-                        <input type="text" name="medications[${index}][dosage]" id="dosage_${index}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="${initialDosage}" placeholder="例: 1錠, 5ml, 50mg">
+                        <label for="taken_dosage_${index}" class="block text-sm font-medium text-gray-700">服用量</label>
+                        <select name="medications[${index}][taken_dosage]" id="taken_dosage_${index}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            ${takenDosageOptions}
+                        </select>
                     </div>
                     <div class="mb-2">
                         <label for="timing_tag_id_${index}" class="block text-sm font-medium text-gray-700">服用タイミング</label>
                         <select name="medications[${index}][timing_tag_id]" id="timing_tag_id_${index}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
-                            <option value="">タイミングを選択してください</option>
-                            @foreach ($timingTags as $timingTag)
-                                <option value="{{ $timingTag->timing_tag_id }}">{{ $timingTag->timing_name }}</option>
-                            @endforeach
+                            ${timingTagOptions}
                         </select>
                     </div>
                     <div class="flex items-center">
@@ -181,9 +197,8 @@
                     </div>
                 `;
 
-                // 以前の入力値があれば、初期値を設定
                 const medSelect = itemDiv.querySelector(`#medication_id_${index}`);
-                const dosageInput = itemDiv.querySelector(`#dosage_${index}`); // dosage inputを取得
+                const takenDosageSelect = itemDiv.querySelector(`#taken_dosage_${index}`);
                 const timingSelect = itemDiv.querySelector(`#timing_tag_id_${index}`);
                 const completedCheckbox = itemDiv.querySelector(`#is_completed_${index}`);
 
@@ -197,46 +212,71 @@
                     completedCheckbox.checked = true;
                 }
 
-                // 薬の選択が変更されたら、デフォルトのdosageを自動入力する
-                // ユーザーが手入力で変更することを想定しているので、あくまで初期値の提案
+                if (initialTakenDosage && takenDosageSelect) {
+                    takenDosageSelect.value = initialTakenDosage;
+                }
+
                 medSelect.addEventListener('change', function() {
                     const selectedMedId = this.value;
                     if (selectedMedId && medicationsData[selectedMedId]) {
-                        dosageInput.value = medicationsData[selectedMedId].dosage;
+                        takenDosageSelect.value = medicationsData[selectedMedId].dosage;
+                        if (takenDosageSelect.selectedIndex === -1) {
+                            takenDosageSelect.value = 'その他';
+                        }
                     } else {
-                        dosageInput.value = ''; // 薬が選択されていない場合はクリア
+                        takenDosageSelect.value = '';
                     }
                 });
 
                 return itemDiv;
             }
 
-            // イベントリスナーの設定
             allMedsTakenCheckbox.addEventListener('change', toggleReasonNotTaken);
             addMedicationRecordButton.addEventListener('click', function () {
                 medicationRecordsContainer.appendChild(createMedicationRecordItem(medicationRecordIndex));
                 medicationRecordIndex++;
             });
 
-            // 削除ボタンのイベント委譲 (動的に追加される要素に対応)
             medicationRecordsContainer.addEventListener('click', function (event) {
                 if (event.target.classList.contains('remove-medication-record')) {
                     event.target.closest('.medication-record-item').remove();
                 }
             });
 
-            // ページロード時の初期状態を設定 (以前の入力値がある場合に対応)
             toggleReasonNotTaken();
 
-            // old('medications') が存在する場合、medicationRecordIndex は old() の数で初期化されているので、
-            // 新しいアイテムの追加はそのままmedicationRecordIndexから開始すれば良い。
-            // 以前の入力値がない場合（初回ロード時）のみ、デフォルトで1つの薬の記録フォームを追加
             const existingMedicationItems = medicationRecordsContainer.querySelectorAll('.medication-record-item');
-            if (existingMedicationItems.length === 0 && medicationRecordIndex === 0) { // medicationRecordIndex === 0 の条件も追加
+            if (existingMedicationItems.length === 0 && medicationRecordIndex === 0) {
                 medicationRecordsContainer.appendChild(createMedicationRecordItem(medicationRecordIndex));
                 medicationRecordIndex++;
             }
-            // old() で再表示された場合は、すでに要素があるので追加しない
+
+            medicationRecordsContainer.querySelectorAll('.medication-record-item').forEach(item => {
+                const medSelect = item.querySelector('.medication-select');
+                const takenDosageSelect = item.querySelector(`select[id^="taken_dosage_"]`);
+                if (medSelect && takenDosageSelect) {
+                    medSelect.addEventListener('change', function() {
+                        const selectedMedId = this.value;
+                        if (selectedMedId && medicationsData[selectedMedId]) {
+                            takenDosageSelect.value = medicationsData[selectedMedId].dosage;
+                            if (takenDosageSelect.selectedIndex === -1) {
+                                takenDosageSelect.value = 'その他';
+                            }
+                        } else {
+                            takenDosageSelect.value = '';
+                        }
+                    });
+                    if (medSelect.value && !takenDosageSelect.value) {
+                         const selectedMedId = medSelect.value;
+                         if (selectedMedId && medicationsData[selectedMedId]) {
+                             takenDosageSelect.value = medicationsData[selectedMedId].dosage;
+                             if (takenDosageSelect.selectedIndex === -1) {
+                                 takenDosageSelect.value = 'その他';
+                             }
+                         }
+                    }
+                }
+            });
         });
     </script>
 </x-app-layout>
