@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const medicationsData = window.medicationsDataFromBlade;
     const timingTagsData = window.timingTagsFromBlade;
     const displayCategoriesData = window.displayCategoriesFromBlade;
-    
+
     // Bladeで計算されたmedicationRecordIndexを初期値として使用
     let medicationRecordIndex = window.medicationRecordIndexFromBlade;
 
