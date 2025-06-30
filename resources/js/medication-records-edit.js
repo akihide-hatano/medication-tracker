@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const medicationsData = window.medicationsDataFromBlade;
     const timingTagsData = window.timingTagsFromBlade;
     const displayCategoriesData = window.displayCategoriesFromBlade; // カテゴリ表示順のために残す
-    
+
     // Bladeで計算されたmedicationRecordIndexを初期値として使用
     let medicationRecordIndex = window.medicationRecordIndexFromBlade;
 
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </h4>
                 <div class="space-y-4 timing-groups-container"></div>
             `;
-            
+
             // 既存のレコードラッパーが存在しない場合は新しく作成し、適切な位置に挿入
             if (!existingRecordsWrapper) {
                 existingRecordsWrapper = document.createElement('div');
@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 existingRecordsWrapper.className = 'space-y-6';
 
                 const noRecordsMessage = document.getElementById('no_medication_records_message');
-                
+
                 if (noRecordsMessage) {
                     noRecordsMessage.before(existingRecordsWrapper);
                     noRecordsMessage.style.display = 'none'; // メッセージを非表示に
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // カテゴリの表示順に従って挿入
             let insertedBefore = null;
             const existingCategoryGroups = Array.from(existingRecordsWrapper.querySelectorAll(':scope > .category-group'));
-            
+
             for (const existingGroup of existingCategoryGroups) {
                 const existingCategoryName = existingGroup.dataset.categoryName;
                 const existingOrder = displayCategoriesData[existingCategoryName]?.category_order || 999;
@@ -199,14 +199,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         let timingGroupsContainer = categoryGroupDiv.querySelector('.timing-groups-container');
-        if (!timingGroupsContainer) { 
-             timingGroupsContainer = document.createElement('div');
-             timingGroupsContainer.className = 'space-y-4 timing-groups-container';
-             categoryGroupDiv.appendChild(timingGroupsContainer);
+        if (!timingGroupsContainer) {
+            timingGroupsContainer = document.createElement('div');
+            timingGroupsContainer.className = 'space-y-4 timing-groups-container';
+            categoryGroupDiv.appendChild(timingGroupsContainer);
         }
 
         let timingGroupDiv = timingGroupsContainer.querySelector(`.timing-group[data-timing-name="${timingName}"]`);
-        
+
         // タイミンググループが存在しない場合は作成
         if (!timingGroupDiv) {
             timingGroupDiv = document.createElement('div');
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     追加
                 </button>
             `;
-            
+
             // タイミングタグの順番にソートして挿入
             let insertedTimingBefore = null;
             const existingTimingGroups = Array.from(timingGroupsContainer.querySelectorAll(':scope > .timing-group'));
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // 既存のタイミンググループの場合、innerHTMLは変更しない
             medicationItemsContainer = timingGroupDiv.querySelector('.medication-record-items-for-timing');
-            if (!medicationItemsContainer) { 
+            if (!medicationItemsContainer) {
                 medicationItemsContainer = document.createElement('div');
                 medicationItemsContainer.className = 'medication-record-items-for-timing space-y-3';
                 timingGroupDiv.appendChild(medicationItemsContainer);
@@ -277,8 +277,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const { medicationItemsContainer } = getOrCreateCategoryAndTimingGroups(
-                defaultCategory, 
-                defaultTimingTag.timing_name, 
+                defaultCategory,
+                defaultTimingTag.timing_name,
                 defaultTimingTag.timing_tag_id
             );
 
@@ -288,12 +288,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 noRecordsMessage.style.display = 'none';
                 console.log('「薬の記録がありません」メッセージを非表示にしました。');
             }
-            
+
             const item = createMedicationRecordItem(medicationRecordIndex, {
                 timing_tag_id: defaultTimingTag.timing_tag_id // デフォルトのタイミングを自動選択
             });
             medicationItemsContainer.appendChild(item); // 適切なタイミンググループ内に追加
-            
+
             medicationRecordIndex++;
             console.log(`新規アイテムをデフォルトカテゴリ/タイミングに追加しました (インデックス: ${medicationRecordIndex - 1})`);
         }
@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     p.id = 'no_medication_records_message';
                     p.className = 'text-gray-600 mb-4';
                     p.textContent = '薬の記録がありません。下のボタンで追加してください。';
-                    
+
                     // actionButtonsContainer の直前に追加
                     if (actionButtonsContainer) {
                         actionButtonsContainer.before(p);
