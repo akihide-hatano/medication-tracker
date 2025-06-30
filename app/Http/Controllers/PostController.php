@@ -219,82 +219,117 @@ class PostController extends Controller
      * @param  \App\Models\Post  $post
      * @return \Illuminate\Contracts\View\View
      */
-    public function edit(Post $post)
+public function edit(Post $post)
     {
         // 投稿の所有者でない場合はアクセスを拒否
         if ($post->user_id !== Auth::id()) {
             abort(403, 'Unauthorized action.');
         }
 
-        $medications = Medication::all();
-        $timingTags = TimingTag::all();
+        // 必要なリレーションをロード
+        // postMedicationRecords に medication と timingTag をロード
+        $post->load(['postMedicationRecords.medication', 'postMedicationRecords.timingTag']);
 
-        // カテゴリごとの表示順を定義 (category_orderを使ってユニークなカテゴリを取得)
-        // TimingTagテーブルにcategory_nameとcategory_orderが直接存在すると仮定
+        $medications = Medication::all(); // medication_id で keyBy しない
+        $timingTags = TimingTag::all();   // timing_tag_id で keyBy しない
+
+        // カテゴリごとの表示順を定義
         $displayCategories = TimingTag::whereNotNull('category_name')
             ->orderBy('category_order')
             ->get()
             ->unique('category_name')
             ->values();
 
-        $nestedCategorizedMedicationRecords = collect();
+        $nestedCategorizedMedicationRecords = collect(); // Blade の既存データ表示用
 
-        // old('medications') があればそちらを優先（バリデーションエラー時の再表示用）
-        // なければ既存の服薬記録データを使用
-        $recordsToDisplay = old('medications', $post->postMedicationRecords->toArray());
+        // JavaScript に渡すための、フラットな薬の記録配列
+        // old() データがあればそれを優先し、なければ既存の投稿の薬の記録を使用
+        $jsInitialMedicationRecords = collect(old('medications', []));
 
-        $recordsCollection = collect($recordsToDisplay);
+        if ($jsInitialMedicationRecords->isEmpty()) {
+            // old() データがない場合、既存の投稿の薬の記録を整形して使用
+            $recordsToProcessForJs = $post->postMedicationRecords->map(function ($record, $index) {
+                // PostMedicationRecord オブジェクトから必要なデータを抽出し、連想配列に変換
+                return [
+                    'medication_id' => $record->medication_id,
+                    'taken_dosage' => $record->taken_dosage,
+                    'timing_tag_id' => $record->timing_tag_id,
+                    'is_completed' => (bool)$record->is_completed,
+                    'reason_not_taken' => $record->reason_not_taken,
+                    'original_index' => $index, // 初期表示用のインデックス
+                    // Blade の select option で selected 属性を設定するために、medication/timingTag は不要
+                ];
+            });
+            $jsInitialMedicationRecords = $recordsToProcessForJs;
+        } else {
+            // old() データがある場合、original_index を保持
+            $jsInitialMedicationRecords = $jsInitialMedicationRecords->map(function ($recordData, $originalIndex) {
+                 $recordData['original_index'] = $originalIndex; // old() のインデックスを保持
+                 $recordData['is_completed'] = (bool)($recordData['is_completed'] ?? 0); // 型を確実にboolにする
+                 return $recordData;
+            });
+        }
 
-        // showメソッドのロジックに近づけて、カテゴリとタイミングでネストされた構造を構築
-        // まず、全てのtimingTagsをカテゴリとタイミングの順でソート
+
+        // Blade 側で表示するために、ネストされた構造を構築
+        // これは create メソッドのロジックと同じで良い
         $orderedTimingTags = TimingTag::orderBy('category_order')
                                     ->orderBy('timing_tag_id')
                                     ->get();
 
+        // old('medications', $post->postMedicationRecords->toArray()); の代わりに $jsInitialMedicationRecords を使う
+        // $jsInitialMedicationRecords は既に配列の形になっていることを想定
         foreach ($orderedTimingTags as $timingTag) {
-            $categoryName = $timingTag->category_name ?? '未分類';
+            $categoryName = $timingTag->category_name ?? 'その他';
             $timingName = $timingTag->timing_name ?? '不明なタイミング';
+            $currentTimingTagId = $timingTag->timing_tag_id;
 
-            // 現在の TimingTag に一致する PostMedicationRecord をフィルタリング
-            // old() または既存のレコードからフィルタリング
-            $recordsForThisTiming = $recordsCollection->filter(function ($recordData) use ($timingTag) {
-                // $recordData が配列の場合とPostMedicationRecordオブジェクトの場合に対応
-                $recordTimingTagId = is_array($recordData) ? ($recordData['timing_tag_id'] ?? null) : ($recordData->timing_tag_id ?? null);
-                return $recordTimingTagId === $timingTag->timing_tag_id;
+            $recordsForThisTiming = $jsInitialMedicationRecords->filter(function ($recordData) use ($currentTimingTagId) {
+                return ($recordData['timing_tag_id'] ?? null) == $currentTimingTagId;
             })
-            ->map(function ($recordData, $originalIndex) use ($medications, $timingTags) {
-                // old() の場合、リレーションデータがないため、ここで補完
-                $medication = Medication::find($recordData['medication_id'] ?? null);
-                $timingTag = TimingTag::find($recordData['timing_tag_id'] ?? null);
+            ->map(function ($recordData) use ($medications, $timingTags) {
+                // Bladeで利用するmedicationとtiming_tagの詳細情報をここで付与
+                $medication = $medications->firstWhere('medication_id', $recordData['medication_id'] ?? null);
+                $timingTagInstance = $timingTags->firstWhere('timing_tag_id', $recordData['timing_tag_id'] ?? null);
 
-                return [
-                    'medication_id' => $recordData['medication_id'] ?? null,
-                    'taken_dosage' => $recordData['taken_dosage'] ?? null,
-                    'timing_tag_id' => $recordData['timing_tag_id'] ?? null,
-                    'is_completed' => (bool)($recordData['is_completed'] ?? 0),
-                    'reason_not_taken' => $recordData['reason_not_taken'] ?? null,
-                    'original_index' => $originalIndex, // old() のインデックスを保持
-                    'medication' => $medication ? $medication->toArray() : null,
-                    'timing_tag' => $timingTag ? $timingTag->toArray() : null,
-                ];
+                $recordData['medication'] = $medication ? $medication->toArray() : null;
+                $recordData['timing_tag'] = $timingTagInstance ? $timingTagInstance->toArray() : null;
+                // original_index は既に $jsInitialMedicationRecords に含まれているはず
+                return $recordData;
             })
-            // この詳細タイミング内の薬を薬の名称でソート
             ->sortBy(function ($record) {
                 return $record['medication']['medication_name'] ?? '';
             });
 
-            // 記録がある場合のみ、ネストされたコレクションに追加 (showと同じロジック)
             if ($recordsForThisTiming->isNotEmpty()) {
                 if (!$nestedCategorizedMedicationRecords->has($categoryName)) {
                     $nestedCategorizedMedicationRecords->put($categoryName, collect());
                 }
-                $nestedCategorizedMedicationRecords->get($categoryName)->put($timingName, $recordsForThisTiming);
+                $categoryCollection = $nestedCategorizedMedicationRecords->get($categoryName);
+
+                if (!$categoryCollection->has($timingName)) {
+                    $categoryCollection->put($timingName, collect());
+                }
+                $timingCollection = $categoryCollection->get($timingName);
+
+                foreach ($recordsForThisTiming as $record) {
+                    $timingCollection->push($record);
+                }
+                $categoryCollection->put($timingName, $timingCollection);
+                $nestedCategorizedMedicationRecords->put($categoryName, $categoryCollection);
             }
         }
-               // ★★★ ここに dd() を追加 ★★★
-        // dd($nestedCategorizedMedicationRecords);
 
-        return view('posts.edit', compact('post', 'medications', 'timingTags', 'nestedCategorizedMedicationRecords', 'displayCategories'));
+        dd($nestedCategorizedMedicationRecords); // ここで再度ddして、中身を確認しても良い
+
+        return view('posts.edit', compact(
+            'post',
+            'medications',
+            'timingTags',
+            'nestedCategorizedMedicationRecords', // Blade のループで使う
+            'displayCategories',
+            'jsInitialMedicationRecords' // JavaScript に渡す
+        ));
     }
 
 
