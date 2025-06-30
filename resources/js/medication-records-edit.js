@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const medicationsData = window.medicationsDataFromBlade;
     const timingTagsData = window.timingTagsFromBlade;
     const displayCategoriesData = window.displayCategoriesFromBlade;
-
+    
     // Bladeで計算されたmedicationRecordIndexを初期値として使用
     let medicationRecordIndex = window.medicationRecordIndexFromBlade;
 
@@ -64,7 +64,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let timingTagOptions = '<option value="">タイミングを選択してください</option>';
         for (const tagId in timingTagsData) {
             const timingTag = timingTagsData[tagId];
-            const isSelected = (initialData.timing_tag_id == timingTag.timing_tag_id) ? 'selected' : '';
+            // initialData.timing_tag_id が undefined または null の場合、何も選択されない
+            const isSelected = (initialData.timing_tag_id !== undefined && initialData.timing_tag_id !== null && initialData.timing_tag_id == timingTag.timing_tag_id) ? 'selected' : '';
             timingTagOptions += `<option value="${timingTag.timing_tag_id}" ${isSelected}>${timingTag.timing_name}</option>`;
         }
         const isCompletedChecked = initialData.is_completed ? 'checked' : '';
@@ -112,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function getOrCreateCategoryAndTimingGroups(categoryName, timingName, timingTagId) {
         let categoryGroupDiv = medicationRecordsContainer.querySelector(`.category-group[data-category-name="${categoryName}"]`);
-        let medicationItemsContainer; // この変数をここで宣言
+        let medicationItemsContainer; 
 
         // カテゴリグループが存在しない場合は作成
         if (!categoryGroupDiv) {
@@ -120,10 +121,10 @@ document.addEventListener('DOMContentLoaded', function() {
             categoryGroupDiv.className = 'category-group p-4 border border-gray-300 rounded-md bg-white mb-6';
             categoryGroupDiv.setAttribute('data-category-name', categoryName);
 
-            // アイコン生成ロジックは削除済み、かつカテゴリ名も表示しないのでシンプルなヘッダーにする
+            // アイコン生成ロジックとカテゴリ名表示を削除
             categoryGroupDiv.innerHTML = `
                 <h4 class="text-lg font-bold mb-3 text-gray-800">
-                    &nbsp; <!-- 空のスペースを保持 -->
+                    &nbsp; 
                 </h4>
                 <div class="space-y-4 timing-groups-container"></div>
             `;
@@ -151,23 +152,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         let timingGroupsContainer = categoryGroupDiv.querySelector('.timing-groups-container');
-        if (!timingGroupsContainer) { // safety check (通常は上記で作成されるはずだが念のため)
-            timingGroupsContainer = document.createElement('div');
-            timingGroupsContainer.className = 'space-y-4 timing-groups-container';
-            categoryGroupDiv.appendChild(timingGroupsContainer);
+        if (!timingGroupsContainer) { 
+             timingGroupsContainer = document.createElement('div');
+             timingGroupsContainer.className = 'space-y-4 timing-groups-container';
+             categoryGroupDiv.appendChild(timingGroupsContainer);
         }
 
         let timingGroupDiv = timingGroupsContainer.querySelector(`.timing-group[data-timing-name="${timingName}"]`);
+        
         // タイミンググループが存在しない場合は作成
         if (!timingGroupDiv) {
             timingGroupDiv = document.createElement('div');
             timingGroupDiv.className = 'timing-group p-3 border border-gray-200 rounded-md bg-gray-50';
             timingGroupDiv.setAttribute('data-timing-name', timingName);
 
-            // タイミング名も表示しないのでシンプルなヘッダーにする
+            // タイミング名表示を削除
             timingGroupDiv.innerHTML = `
                 <h5 class="font-semibold text-gray-700 text-base mb-2">
-                    &nbsp; <!-- 空のスペースを保持 -->
+                    &nbsp; 
                 </h5>
                 <div class="medication-record-items-for-timing space-y-3"></div>
                 <button type="button" class="add-medication-record-for-timing inline-flex items-center px-3 py-1 bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 mt-3"
@@ -178,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     追加
                 </button>
             `;
-
+            
             // タイミングタグの順番にソートして挿入
             let insertedTimingBefore = null;
             const existingTimingGroups = Array.from(timingGroupsContainer.querySelectorAll(':scope > .timing-group'));
@@ -203,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // 既存のタイミンググループの場合、innerHTMLは変更しない
             medicationItemsContainer = timingGroupDiv.querySelector('.medication-record-items-for-timing');
-            if (!medicationItemsContainer) { // safety check
+            if (!medicationItemsContainer) { 
                 medicationItemsContainer = document.createElement('div');
                 medicationItemsContainer.className = 'medication-record-items-for-timing space-y-3';
                 timingGroupDiv.appendChild(medicationItemsContainer);
@@ -213,57 +215,42 @@ document.addEventListener('DOMContentLoaded', function() {
         return { categoryGroupDiv, timingGroupDiv, medicationItemsContainer };
     }
 
-    // 「薬の記録を新規追加 (カテゴリ未指定)」ボタンのイベントリスナー（元に戻した）
+    // 「内服薬追記」ボタンのイベントリスナー
     if (addMedicationRecordOverallButton) {
         addMedicationRecordOverallButton.addEventListener('click', function () {
-            // デフォルトのカテゴリとタイミング（例: 最初のカテゴリの最初のタイミング）を取得
-            const firstCategory = Object.values(displayCategoriesData).sort((a, b) => (a.category_order || 999) - (b.category_order || 999))[0];
-
-            let firstTimingTag = null;
-            if (firstCategory) {
-                const timingTagsInFirstCategory = Object.values(timingTagsData).filter(tag => tag.category_name === firstCategory.category_name);
-                if (timingTagsInFirstCategory.length > 0) {
-                    firstTimingTag = timingTagsInFirstCategory.sort((a, b) => a.timing_tag_id - b.timing_tag_id)[0];
-                }
-            }
-
-            if (firstCategory && firstTimingTag) {
-                const { medicationItemsContainer } = getOrCreateCategoryAndTimingGroups(firstCategory.category_name, firstTimingTag.timing_name, firstTimingTag.timing_tag_id);
-                const item = createMedicationRecordItem(medicationRecordIndex, {timing_tag_id: firstTimingTag.timing_tag_id});
-                medicationItemsContainer.appendChild(item);
-                medicationRecordIndex++;
-            } else {
-                // カテゴリやタイミングが全く定義されていない場合のフォールバック
-                const item = createMedicationRecordItem(medicationRecordIndex);
-                medicationRecordsContainer.appendChild(item);
-                medicationRecordIndex++;
-                console.warn('デフォルトのカテゴリとタイミングが見つかりませんでした。通常の薬の記録として追加します。');
-            }
+            // ここで initialData に timing_tag_id を渡さないように変更
+            const item = createMedicationRecordItem(medicationRecordIndex, {}); // 空のオブジェクトを渡す
+            medicationRecordsContainer.appendChild(item);
+            medicationRecordIndex++;
+            console.warn('新しい薬の記録を追加しました。'); // 確認用ログ
         });
     }
 
-    // カテゴリ別追加ボタン群のイベントリスナー（イベント委譲）
+    // カテゴリ別追加ボタン群のイベントリスナー
     document.addEventListener('click', function(event) {
         if (event.target.classList.contains('add-medication-record-by-category')) {
             const categoryName = event.target.dataset.categoryName;
-
+            
             const timingTagsInCategory = Object.values(timingTagsData).filter(tag => tag.category_name === categoryName);
-
+            
             if (timingTagsInCategory.length > 0) {
                 const firstTimingTag = timingTagsInCategory.sort((a, b) => a.timing_tag_id - b.timing_tag_id)[0];
-
+                
                 const { medicationItemsContainer } = getOrCreateCategoryAndTimingGroups(
-                    categoryName,
-                    firstTimingTag.timing_name,
+                    categoryName, 
+                    firstTimingTag.timing_name, 
                     firstTimingTag.timing_tag_id
                 );
-                const item = createMedicationRecordItem(medicationRecordIndex, {
-                    timing_tag_id: firstTimingTag.timing_tag_id
-                });
+                // ここで initialData に timing_tag_id を渡さないように変更
+                const item = createMedicationRecordItem(medicationRecordIndex, {}); // 空のオブジェクトを渡す
                 medicationItemsContainer.appendChild(item);
                 medicationRecordIndex++;
             } else {
                 console.warn(`カテゴリ "${categoryName}" に紐づくタイミングタグが見つかりませんでした。`);
+                // カテゴリにタイミングが紐づいていない場合でも、とりあえず空のフォームを追加したいなら以下を有効にする
+                // const item = createMedicationRecordItem(medicationRecordIndex, {});
+                // medicationRecordsContainer.appendChild(item);
+                // medicationRecordIndex++;
             }
         }
     });
@@ -298,6 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const timingName = event.target.dataset.timingName;
             const categoryName = event.target.dataset.categoryName;
 
+            // ここはtiming_tag_idを渡して自動選択させる（意図通りの動作）
             const newItem = createMedicationRecordItem(medicationRecordIndex, {
                 timing_tag_id: timingTagId // クリックされたタイミングタグのIDを初期値として設定
             });
