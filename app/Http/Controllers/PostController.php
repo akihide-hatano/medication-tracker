@@ -320,7 +320,7 @@ public function edit(Post $post)
             }
         }
 
-        dd($nestedCategorizedMedicationRecords); // ここで再度ddして、中身を確認しても良い
+        // dd($nestedCategorizedMedicationRecords); // ここで再度ddして、中身を確認しても良い
 
         return view('posts.edit', compact(
             'post',

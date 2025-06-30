@@ -63,59 +63,125 @@
                                 薬の服用記録
                             </h3>
                             <div id="medication_records_container">
-                                {{-- 既存の薬の記録があればここに表示 --}}
-                                {{-- selectedMedications は PostController::edit から渡される --}}
-                                @if (isset($selectedMedications) && count($selectedMedications) > 0)
-                                    @foreach ($selectedMedications as $index => $record)
-                                        <div class="medication-record-item p-4 mb-3 border border-gray-200 rounded-md bg-white shadow-sm relative">
-                                            <button type="button" class="remove-medication-record absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg">&times;</button>
-                                            <div class="mb-2">
-                                                <label for="medication_id_{{ $index }}" class="block text-sm font-medium text-gray-700">薬を選択</label>
-                                                <select name="medications[{{ $index }}][medication_id]" id="medication_id_{{ $index }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 medication-select" required>
-                                                    <option value="">薬を選択してください</option>
-                                                    @foreach ($medications as $medication)
-                                                        <option value="{{ $medication->medication_id }}" {{ (old('medications.' . $index . '.medication_id', $record['medication_id']) == $medication->medication_id) ? 'selected' : '' }}>
-                                                            {{ $medication->medication_name }} ({{ $medication->dosage }})
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            {{-- taken_dosage のドロップダウンフィールド --}}
-                                            <div class="mb-2">
-                                                <label for="taken_dosage_{{ $index }}" class="block text-sm font-medium text-gray-700">服用量</label>
-                                                <select name="medications[{{ $index }}][taken_dosage]" id="taken_dosage_{{ $index }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                                                    <option value="">選択してください</option>
-                                                    @for ($i = 1; $i <= 10; $i++)
-                                                        <option value="{{ $i }}錠" {{ (old('medications.' . $index . '.taken_dosage', $record['taken_dosage']) == $i . '錠') ? 'selected' : '' }}>{{ $i }}錠</option>
-                                                    @endfor
-                                                    <option value="その他" {{ (old('medications.' . $index . '.taken_dosage', $record['taken_dosage']) == 'その他') ? 'selected' : '' }}>その他</option>
-                                                </select>
-                                            </div>
-                                            <div class="mb-2">
-                                                <label for="timing_tag_id_{{ $index }}" class="block text-sm font-medium text-gray-700">服用タイミング</label>
-                                                <select name="medications[{{ $index }}][timing_tag_id]" id="timing_tag_id_{{ $index }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
-                                                    <option value="">タイミングを選択してください</option>
-                                                    @foreach ($timingTags as $timingTag)
-                                                        <option value="{{ $timingTag->timing_tag_id }}" {{ (old('medications.' . $index . '.timing_tag_id', $record['timing_tag_id']) == $timingTag->timing_tag_id) ? 'selected' : '' }}>
-                                                            {{ $timingTag->timing_name }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div class="flex items-center">
-                                                <input type="hidden" name="medications[{{ $index }}][is_completed]" value="0">
-                                                <input type="checkbox" name="medications[{{ $index }}][is_completed]" id="is_completed_{{ $index }}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1" {{ (old('medications.' . $index . '.is_completed', $record['is_completed'])) ? 'checked' : '' }}>
-                                                <label for="is_completed_{{ $index }}" class="ml-2 block text-sm font-medium text-gray-700">服用した</label>
-                                            </div>
-                                        </div>
-                                    @endforeach
+                                {{-- 既存の薬の記録があればカテゴリとタイミングでグルーピングして表示 --}}
+                                @if (!$nestedCategorizedMedicationRecords->isEmpty())
+                                    <div class="space-y-6">
+                                        @foreach ($displayCategories as $category)
+                                            {{-- nestedCategorizedMedicationRecords にそのカテゴリの記録があるか確認 --}}
+                                            @if ($nestedCategorizedMedicationRecords->has($category->category_name))
+                                                @php
+                                                    $categoryName = $category->category_name;
+                                                    // show.blade.php と同じアイコン設定ロジックをここに移植
+                                                    $categoryIcon = '';
+                                                    $iconBaseClass = 'w-12 h-12 mr-2'; // TailwindCSSでサイズとマージンを設定
+                                                    switch ($categoryName) {
+                                                        case '朝':
+                                                            $categoryIcon = '<img src="' . asset('images/morning.png') . '" alt="朝" class="' . $iconBaseClass . '">';
+                                                            break;
+                                                        case '昼':
+                                                            $categoryIcon = '<img src="' . asset('images/noon.png') . '" alt="昼" class="' . $iconBaseClass . '">';
+                                                            break;
+                                                        case '夕':
+                                                            $categoryIcon = '<img src="' . asset('images/evenig.png') . '" alt="夕" class="' . $iconBaseClass . '">';
+                                                            break;
+                                                        case '寝る前':
+                                                            $categoryIcon = '<img src="' . asset('images/night.png') . '" alt="寝る前" class="' . $iconBaseClass . '">';
+                                                            break;
+                                                        case '頓服':
+                                                            $categoryIcon = '<img src="' . asset('images/prn.png') . '" alt="頓服" class="' . $iconBaseClass . '">';
+                                                            break;
+                                                        case 'その他':
+                                                            $categoryIcon = '<img src="' . asset('images/other.png') . '" alt="その他" class="' . $iconBaseClass . '">';
+                                                            break;
+                                                        default:
+                                                            $categoryIcon = '<img src="' . asset('images/default.png') . '" alt="デフォルト" class="' . $iconBaseClass . '">';
+                                                            break;
+                                                    }
+                                                @endphp
+                                                <div class="category-group p-4 border border-gray-300 rounded-md bg-white">
+                                                    <h4 class="text-lg font-bold mb-3 flex items-center text-gray-800">
+                                                        <span class="text-purple-600">{!! $categoryIcon !!}</span>
+                                                        {{ $categoryName }}
+                                                    </h4>
+                                                    <div class="space-y-4 timing-groups-container">
+                                                        {{-- そのカテゴリ内のタイミンググループをループ --}}
+                                                        @foreach ($nestedCategorizedMedicationRecords->get($categoryName) as $timingName => $recordsInTiming)
+                                                            <div class="timing-group p-3 border border-gray-200 rounded-md bg-gray-50">
+                                                                <h5 class="font-semibold text-gray-700 text-base mb-2">{{ $timingName }}</h5>
+                                                                <div class="medication-record-items-for-timing space-y-3">
+                                                                    {{-- そのタイミンググループ内の個々の薬の記録をループ --}}
+                                                                    @foreach ($recordsInTiming as $record)
+                                                                        <div class="medication-record-item p-4 border border-gray-200 rounded-md bg-white shadow-sm">
+                                                                            <div class="flex justify-end mb-4">
+                                                                                <button type="button" class="remove-medication-record text-sm text-red-500 hover:text-red-700 font-bold py-1 px-2 rounded-md border border-red-300 hover:bg-red-50">削除</button>
+                                                                            </div>
+                                                                            <div class="mb-2">
+                                                                                <label for="medication_id_{{ $record['original_index'] }}" class="block text-sm font-medium text-gray-700">薬を選択</label>
+                                                                                <select name="medications[{{ $record['original_index'] }}][medication_id]" id="medication_id_{{ $record['original_index'] }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 medication-select" required>
+                                                                                    <option value="">薬を選択してください</option>
+                                                                                    {{-- $medications は Medicationモデルのコレクションなのでオブジェクトアクセス --}}
+                                                                                    @foreach ($medications as $medication)
+                                                                                        <option value="{{ $medication->medication_id }}" {{ (isset($record['medication_id']) && $record['medication_id'] == $medication->medication_id) ? 'selected' : '' }}>
+                                                                                            {{ $medication->medication_name }} ({{ $medication->dosage }})
+                                                                                        </option>
+                                                                                    @endforeach
+                                                                                </select>
+                                                                            </div>
+                                                                            <div class="mb-2">
+                                                                                <label for="taken_dosage_{{ $record['original_index'] }}" class="block text-sm font-medium text-gray-700">服用量</label>
+                                                                                <select name="medications[{{ $record['original_index'] }}][taken_dosage]" id="taken_dosage_{{ $record['original_index'] }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                                                    <option value="">選択してください</option>
+                                                                                    @for ($i = 1; $i <= 10; $i++)
+                                                                                        <option value="{{ $i }}錠" {{ (isset($record['taken_dosage']) && $record['taken_dosage'] == $i . '錠') ? 'selected' : '' }}>{{ $i }}錠</option>
+                                                                                    @endfor
+                                                                                    <option value="その他" {{ (isset($record['taken_dosage']) && $record['taken_dosage'] == 'その他') ? 'selected' : '' }}>その他</option>
+                                                                                </select>
+                                                                            </div>
+                                                                            <div class="mb-2">
+                                                                                <label for="timing_tag_id_{{ $record['original_index'] }}" class="block text-sm font-medium text-gray-700">服用タイミング</label>
+                                                                                <select name="medications[{{ $record['original_index'] }}][timing_tag_id]" id="timing_tag_id_{{ $record['original_index'] }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 timing-select" required>
+                                                                                    <option value="">タイミングを選択してください</option>
+                                                                                    {{-- $timingTags は TimingTagモデルのコレクションなのでオブジェクトアクセス --}}
+                                                                                    @foreach ($timingTags as $timingTag)
+                                                                                        <option value="{{ $timingTag->timing_tag_id }}" {{ (isset($record['timing_tag_id']) && $record['timing_tag_id'] == $timingTag->timing_tag_id) ? 'selected' : '' }}>
+                                                                                            {{ $timingTag->timing_name }}
+                                                                                        </option>
+                                                                                    @endforeach
+                                                                                </select>
+                                                                            </div>
+                                                                            <div class="flex items-center">
+                                                                                <input type="hidden" name="medications[{{ $record['original_index'] }}][is_completed]" value="0">
+                                                                                <input type="checkbox" name="medications[{{ $record['original_index'] }}][is_completed]" id="is_completed_{{ $record['original_index'] }}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1" {{ (isset($record['is_completed']) && $record['is_completed']) ? 'checked' : '' }}>
+                                                                                <label for="is_completed_{{ $record['original_index'] }}" class="ml-2 block text-sm font-medium text-gray-700">服用した</label>
+                                                                            </div>
+                                                                        </div>
+                                                                    @endforeach
+                                                                </div> {{-- .medication-record-items-for-timing --}}
+                                                                {{-- このタイミンググループ内に薬を追加するボタンを配置 --}}
+                                                                <button type="button" class="add-medication-record-for-timing inline-flex items-center px-3 py-1 bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 mt-3"
+                                                                    data-timing-tag-id="{{ $recordsInTiming->first()['timing_tag_id'] ?? '' }}"
+                                                                    data-timing-name="{{ $timingName }}"
+                                                                    data-category-name="{{ $categoryName }}">
+                                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                                                    追加
+                                                                </button>
+                                                            </div> {{-- .timing-group --}}
+                                                        @endforeach
+                                                    </div> {{-- .space-y-4 for timings --}}
+                                                </div> {{-- .category-group --}}
+                                            @endif
+                                        @endforeach
+                                    </div> {{-- .space-y-6 for categories --}}
+                                @else
+                                    <p class="text-gray-600 mb-4">薬の記録がありません。下のボタンで追加してください。</p>
                                 @endif
-                            </div>
-                            <button type="button" id="add_medication_record" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-lg hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 mt-4">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                薬の記録を追加
-                            </button>
-                        </div>
+                                {{-- 全体で薬を追加するボタン (カテゴリやタイミングを特定せずにどこでも追加できる) --}}
+                                <button type="button" id="add_medication_record_overall" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-lg hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 mt-4">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    薬の記録を新規追加 (カテゴリ未指定)
+                                </button>
+                            </div> {{-- #medication_records_container --}}
+                        </div> {{-- 動的な薬の服用記録セクション --}}
 
                         {{-- 送信ボタン --}}
                         <div class="flex justify-end space-x-4 mt-8">
@@ -132,139 +198,19 @@
         </div>
     </div>
 
+    {{-- JavaScriptファイルを読み込む前に、必要なデータをグローバル変数として渡す --}}
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const allMedsTakenCheckbox = document.getElementById('all_meds_taken');
-            const reasonNotTakenField = document.getElementById('reason_not_taken_field');
-            const medicationRecordsContainer = document.getElementById('medication_records_container');
-            const addMedicationRecordButton = document.getElementById('add_medication_record');
+        window.medicationsDataFromBlade = @json($medications->keyBy('medication_id'));
+        window.timingTagsFromBlade = @json($timingTags->keyBy('timing_tag_id'));
+        window.displayCategoriesFromBlade = @json($displayCategories->keyBy('category_name'));
+        window.jsInitialMedicationRecords = @json($jsInitialMedicationRecords); // コントローラから渡されたフラットな配列
 
-            const medicationsData = @json($medications->keyBy('medication_id'));
-            const timingTagsData = @json($timingTags->keyBy('timing_tag_id'));
-            const initialMedicationRecords = @json(old('medications', $selectedMedications ?? []));
-
-            let medicationRecordIndex = initialMedicationRecords.length;
-
-            function toggleReasonNotTaken() {
-                if (allMedsTakenCheckbox.checked) {
-                    reasonNotTakenField.style.display = 'none';
-                    const textarea = reasonNotTakenField.querySelector('textarea');
-                    if (textarea) textarea.value = '';
-                } else {
-                    reasonNotTakenField.style.display = 'block';
-                }
-            }
-
-            function createMedicationRecordItem(index, medicationId = '', timingTagId = '', isCompleted = false, initialTakenDosage = '') {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'medication-record-item p-4 mb-3 border border-gray-200 rounded-md bg-white shadow-sm relative';
-
-                let medicationOptions = '<option value="">薬を選択してください</option>';
-                for (const medId in medicationsData) {
-                    const medication = medicationsData[medId];
-                    medicationOptions += `<option value="${medication.medication_id}">${medication.medication_name} (${medication.dosage})</option>`;
-                }
-
-                let timingTagOptions = '<option value="">タイミングを選択してください</option>';
-                for (const tagId in timingTagsData) { // JSのfor文
-                    const timingTag = timingTagsData[tagId];
-                    timingTagOptions += `<option value="${timingTag.timing_tag_id}">${timingTag.timing_name}</option>`;
-                }
-
-                let takenDosageOptions = '<option value="">選択してください</option>';
-                for (let i = 1; i <= 10; i++) { // JavaScriptのfor文
-                    takenDosageOptions += `<option value="${i}錠">${i}錠</option>`;
-                }
-                takenDosageOptions += `<option value="その他">その他</option>`;
-
-
-                itemDiv.innerHTML = `
-                    <button type="button" class="remove-medication-record absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg">&times;</button>
-                    <div class="mb-2">
-                        <label for="medication_id_${index}" class="block text-sm font-medium text-gray-700">薬を選択</label>
-                        <select name="medications[${index}][medication_id]" id="medication_id_${index}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 medication-select" required>
-                            ${medicationOptions}
-                        </select>
-                    </div>
-                    <div class="mb-2">
-                        <label for="taken_dosage_${index}" class="block text-sm font-medium text-gray-700">服用量</label>
-                        <select name="medications[${index}][taken_dosage]" id="taken_dosage_${index}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                            ${takenDosageOptions}
-                        </select>
-                    </div>
-                    <div class="mb-2">
-                        <label for="timing_tag_id_${index}" class="block text-sm font-medium text-gray-700">服用タイミング</label>
-                        <select name="medications[${index}][timing_tag_id]" id="timing_tag_id_${index}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" required>
-                            ${timingTagOptions}
-                        </select>
-                    </div>
-                    <div class="flex items-center">
-                        <input type="hidden" name="medications[${index}][is_completed]" value="0">
-                        <input type="checkbox" name="medications[${index}][is_completed]" id="is_completed_${index}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1">
-                        <label for="is_completed_${index}" class="ml-2 block text-sm font-medium text-gray-700">服用した</label>
-                    </div>
-                `;
-
-                const medSelect = itemDiv.querySelector(`#medication_id_${index}`);
-                const takenDosageSelect = itemDiv.querySelector(`#taken_dosage_${index}`);
-                const timingSelect = itemDiv.querySelector(`#timing_tag_id_${index}`);
-                const completedCheckbox = itemDiv.querySelector(`#is_completed_${index}`);
-
-                if (medicationId && medSelect) {
-                    medSelect.value = medicationId;
-                }
-                if (timingTagId && timingSelect) {
-                    timingSelect.value = timingTagId;
-                }
-                if (isCompleted && completedCheckbox) {
-                    completedCheckbox.checked = true;
-                }
-
-                if (initialTakenDosage && takenDosageSelect) {
-                    takenDosageSelect.value = initialTakenDosage;
-                }
-
-                // 薬の選択が変更されても、taken_dosage を自動設定しない
-                // ユーザーが手動で選択するようにする
-                // medSelect.addEventListener('change', function() {
-                //     // ... 自動設定ロジックは削除 ...
-                // });
-
-                return itemDiv;
-            }
-
-            allMedsTakenCheckbox.addEventListener('change', toggleReasonNotTaken);
-            addMedicationRecordButton.addEventListener('click', function () {
-                // initialTakenDosage を空で渡すことで、初期選択なしにする
-                medicationRecordsContainer.appendChild(createMedicationRecordItem(medicationRecordIndex, '', '', false, ''));
-                medicationRecordIndex++;
-            });
-
-            medicationRecordsContainer.addEventListener('click', function (event) {
-                if (event.target.classList.contains('remove-medication-record')) {
-                    event.target.closest('.medication-record-item').remove();
-                }
-            });
-
-            toggleReasonNotTaken();
-
-            const existingMedicationItems = medicationRecordsContainer.querySelectorAll('.medication-record-item');
-            if (existingMedicationItems.length === 0 && medicationRecordIndex === 0) {
-                medicationRecordsContainer.appendChild(createMedicationRecordItem(medicationRecordIndex));
-                medicationRecordIndex++;
-            }
-
-            // ページロード時に既存の medication-select 要素にイベントリスナーを再設定 (自動設定ロジックは削除済み)
-            medicationRecordsContainer.querySelectorAll('.medication-record-item').forEach(item => {
-                const medSelect = item.querySelector('.medication-select');
-                const takenDosageSelect = item.querySelector(`select[id^="taken_dosage_"]`);
-                if (medSelect && takenDosageSelect) {
-                    // 自動設定ロジックは削除
-                    // medSelect.addEventListener('change', function() { /* ... */ });
-                    // 初期値セットロジックも、コントローラーから渡された値があれば自動でselectedになるため不要
-                    // if (medSelect.value && !takenDosageSelect.value) { /* ... */ }
-                }
-            });
-        });
+        @php
+            // medicationRecordIndex の初期値は、JavaScriptに渡す配列の長さを基にする
+            $initialRecordCount = count($jsInitialMedicationRecords);
+        @endphp
+        window.medicationRecordIndexFromBlade = {{ $initialRecordCount }};
     </script>
+    {{-- Viteを使って app.js と medication-records.js を読み込む --}}
+    @vite(['resources/js/app.js', 'resources/js/medication-records.js'])
 </x-app-layout>
