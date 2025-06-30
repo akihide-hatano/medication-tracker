@@ -212,5 +212,5 @@
         window.medicationRecordIndexFromBlade = {{ $initialRecordCount }};
     </script>
     {{-- Viteを使って app.js と medication-records.js を読み込む --}}
-    @vite(['resources/js/app.js', 'resources/js/medication-records.js'])
+    @vite(['resources/js/app.js', 'resources/js/medication-records-edit.js'])
 </x-app-layout>
