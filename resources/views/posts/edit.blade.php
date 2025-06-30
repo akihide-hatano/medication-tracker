@@ -175,7 +175,7 @@
                                 @else
                                     <p id="no_medication_records_message" class="text-gray-600 mb-4">薬の記録がありません。下のボタンで追加してください。</p>
                                 @endif
-                                
+
                                 {{-- ★ここが重要★ 全体で薬を追加するボタンとカテゴリ別ボタンをまとめるコンテナ --}}
                                 {{-- このコンテナは medication_records_container の最後の要素として配置し、
                                     新しい薬の記録フォームはこのコンテナの直前に挿入されるようにする。 --}}
@@ -209,7 +209,7 @@
         window.medicationsDataFromBlade = @json($medications->keyBy('medication_id'));
         window.timingTagsFromBlade = @json($timingTags->keyBy('timing_tag_id'));
         // window.displayCategoriesFromBlade は不要になるが、JavaScript側の修正次第で残しても問題はない
-        window.displayCategoriesFromBlade = @json($displayCategories->keyBy('category_name')); 
+        window.displayCategoriesFromBlade = @json($displayCategories->keyBy('category_name'));
         window.jsInitialMedicationRecords = @json($jsInitialMedicationRecords); // コントローラから渡されたフラットな配列
 
         @php
