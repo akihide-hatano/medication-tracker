@@ -65,7 +65,7 @@
                             <div id="medication_records_container">
                                 {{-- 既存の薬の記録があればカテゴリとタイミングでグルーピングして表示 --}}
                                 @if (!$nestedCategorizedMedicationRecords->isEmpty())
-                                    <div class="space-y-6">
+                                    <div id="existing_medication_records_wrapper" class="space-y-6">
                                         @foreach ($displayCategories as $category)
                                             {{-- nestedCategorizedMedicationRecords にそのカテゴリの記録があるか確認 --}}
                                             @if ($nestedCategorizedMedicationRecords->has($category->category_name))
@@ -171,15 +171,41 @@
                                                 </div> {{-- .category-group --}}
                                             @endif
                                         @endforeach
-                                    </div> {{-- .space-y-6 for categories --}}
+                                    </div> {{-- #existing_medication_records_wrapper --}}
                                 @else
-                                    <p class="text-gray-600 mb-4">薬の記録がありません。下のボタンで追加してください。</p>
+                                    <p id="no_medication_records_message" class="text-gray-600 mb-4">薬の記録がありません。下のボタンで追加してください。</p>
                                 @endif
-                                {{-- 全体で薬を追加するボタン (カテゴリやタイミングを特定せずにどこでも追加できる) --}}
-                                <button type="button" id="add_medication_record_overall" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-lg hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 mt-4">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                    薬の記録を新規追加 (カテゴリ未指定)
-                                </button>
+                                
+                                {{-- ★ここが重要★ 全体で薬を追加するボタンとカテゴリ別ボタンをまとめるコンテナ --}}
+                                {{-- このコンテナは medication_records_container の最後の要素として配置し、
+                                    新しい薬の記録フォームはこのコンテナの直前に挿入されるようにする。 --}}
+                                <div id="action_buttons_container" class="mb-4 flex flex-wrap gap-2 justify-center mt-4">
+                                    <button type="button" id="add_medication_record_overall" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-lg hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                        薬の記録を新規追加 (カテゴリ未指定)
+                                    </button>
+                                    {{-- カテゴリ別追加ボタン群 --}}
+                                    @foreach ($displayCategories as $category)
+                                        <button type="button" class="add-medication-record-by-category inline-flex items-center px-4 py-2 bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-600 active:bg-indigo-700 focus:outline-none focus:border-indigo-700 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150"
+                                            data-category-name="{{ $category->category_name }}">
+                                            <span class="mr-1">
+                                                @php
+                                                    $iconBaseClass = 'w-4 h-4';
+                                                    switch ($category->category_name) {
+                                                        case '朝': echo '<img src="' . asset('images/morning.png') . '" alt="朝" class="' . $iconBaseClass . '">'; break;
+                                                        case '昼': echo '<img src="' . asset('images/noon.png') . '" alt="昼" class="' . $iconBaseClass . '">'; break;
+                                                        case '夕': echo '<img src="' . asset('images/evenig.png') . '" alt="夕" class="' . $iconBaseClass . '">'; break;
+                                                        case '寝る前': echo '<img src="' . asset('images/night.png') . '" alt="寝る前" class="' . $iconBaseClass . '">'; break;
+                                                        case '頓服': echo '<img src="' . asset('images/prn.png') . '" alt="頓服" class="' . $iconBaseClass . '">'; break;
+                                                        case 'その他': echo '<img src="' . asset('images/other.png') . '" alt="その他" class="' . $iconBaseClass . '">'; break;
+                                                        default: echo '<img src="' . asset('images/default.png') . '" alt="デフォルト" class="' . $iconBaseClass . '">'; break;
+                                                    }
+                                                @endphp
+                                            </span>
+                                            {{ $category->category_name }}
+                                        </button>
+                                    @endforeach
+                                </div>
                             </div> {{-- #medication_records_container --}}
                         </div> {{-- 動的な薬の服用記録セクション --}}
 
