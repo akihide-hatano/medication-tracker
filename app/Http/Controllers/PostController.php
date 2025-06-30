@@ -292,7 +292,7 @@ class PostController extends Controller
             }
         }
                // ★★★ ここに dd() を追加 ★★★
-        dd($nestedCategorizedMedicationRecords);
+        // dd($nestedCategorizedMedicationRecords);
 
         return view('posts.edit', compact('post', 'medications', 'timingTags', 'nestedCategorizedMedicationRecords', 'displayCategories'));
     }
