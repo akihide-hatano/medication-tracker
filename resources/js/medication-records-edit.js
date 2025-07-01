@@ -132,27 +132,18 @@ document.addEventListener('DOMContentLoaded', function() {
             categoryGroupDiv.className = 'category-group p-4 border border-gray-300 rounded-md bg-white mb-6';
             categoryGroupDiv.setAttribute('data-category-name', categoryName);
 
-            // アイコン生成ロジックとカテゴリ名表示を再挿入
-            let categoryIconHtml = '';
-            const iconBaseClass = 'w-12 h-12 mr-2';
-            switch (categoryName) {
-                case '朝': categoryIconHtml = `<img src="/images/morning.png" alt="朝" class="${iconBaseClass}">`; break;
-                case '昼': categoryIconHtml = `<img src="/images/noon.png" alt="昼" class="${iconBaseClass}">`; break;
-                case '夕': categoryIconHtml = `<img src="/images/evenig.png" alt="夕" class="${iconBaseClass}">`; break;
-                case '寝る前': categoryIconHtml = `<img src="/images/night.png" alt="寝る前" class="${iconBaseClass}">`; break;
-                case '頓服': categoryIconHtml = `<img src="/images/prn.png" alt="頓服" class="${iconBaseClass}">`; break;
-                case 'その他': categoryIconHtml = `<img src="/images/other.png" alt="その他" class="${iconBaseClass}">`; break;
-                default: categoryIconHtml = `<img src="/images/default.png" alt="デフォルト" class="${iconBaseClass}">`; break;
-            }
+            // アイコン生成ロジックとカテゴリ名表示を削除しました。
+            // 以前はここにカテゴリ名に応じたアイコンのHTMLを生成するswitch文がありました。
+            // 例: let categoryIconHtml = '';
+            // switch (categoryName) { ... }
 
             categoryGroupDiv.innerHTML = `
                 <h4 class="text-lg font-bold mb-3 flex items-center text-gray-800">
-                    <span class="text-purple-600">${categoryIconHtml}</span>
+                    <span class="text-purple-600"></span> <!-- アイコン表示部分を空にしました -->
                     ${categoryName}
                 </h4>
                 <div class="space-y-4 timing-groups-container"></div>
             `;
-            
             // 既存のレコードラッパーが存在しない場合は新しく作成し、適切な位置に挿入
             if (!existingRecordsWrapper) {
                 existingRecordsWrapper = document.createElement('div');
@@ -160,7 +151,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 existingRecordsWrapper.className = 'space-y-6';
 
                 const noRecordsMessage = document.getElementById('no_medication_records_message');
-                
                 if (noRecordsMessage) {
                     noRecordsMessage.before(existingRecordsWrapper);
                     noRecordsMessage.style.display = 'none'; // メッセージを非表示に
@@ -177,7 +167,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // カテゴリの表示順に従って挿入
             let insertedBefore = null;
             const existingCategoryGroups = Array.from(existingRecordsWrapper.querySelectorAll(':scope > .category-group'));
-            
             for (const existingGroup of existingCategoryGroups) {
                 const existingCategoryName = existingGroup.dataset.categoryName;
                 const existingOrder = displayCategoriesData[existingCategoryName]?.category_order || 999;
@@ -284,7 +273,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 medicationRecordsContainer.appendChild(item); 
                 console.warn('actionButtonsContainerが見つからなかったため、medicationRecordsContainerの末尾にアイテムを追加しました。');
             }
-            
             medicationRecordIndex++;
         }
     });
