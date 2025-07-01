@@ -92,6 +92,10 @@
                                 </div>
                             @endforeach
                         </div>
+                        {{-- ページネーションリンクの表示 --}}
+                        <div class="mt-8">
+                            {{ $posts->links() }}
+                        </div>
                     @endif
 
                     <div class="mt-8 text-center">
