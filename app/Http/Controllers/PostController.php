@@ -38,7 +38,6 @@ class PostController extends Controller
                 $query->where('all_meds_taken', false);
             }
         }
-
         //データ取得(pagenation適応)
         $posts = $query->paginate(9);
         return view('posts.index', compact('posts'));
