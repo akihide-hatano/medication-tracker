@@ -25,16 +25,22 @@ class PostController extends Controller
      */
     public function index(Request $request)
     {
+        // ① クエリの開始と eager loading
+        // 認証ユーザーのIDで投稿を絞り込む
         $query = Post::with(['user', 'postMedicationRecords.medication', 'postMedicationRecords.timingTag'])
+                    ->where('user_id',Auth::id())
                     ->orderBy('post_date', 'desc');
 
+        //内服の有無に対してのフィルタリング
         if ($request->has('filter')) {
             $filter = $request->input('filter');
             if ($filter === 'not_completed') {
                 $query->where('all_meds_taken', false);
             }
         }
-        $posts = $query->get();
+
+        //データ取得(pagenation適応)
+        $posts = $query->paginate(9);
         return view('posts.index', compact('posts'));
     }
 
