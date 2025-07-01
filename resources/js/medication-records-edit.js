@@ -1,5 +1,3 @@
-// resources/js/medication-records-edit.js
-
 document.addEventListener('DOMContentLoaded', function() {
     const allMedsTakenCheckbox = document.getElementById('all_meds_taken');
     const reasonNotTakenField = document.getElementById('reason_not_taken_field');
