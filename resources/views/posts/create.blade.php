@@ -64,7 +64,7 @@
                             <div id="medication_records_container">
                                 {{-- 以前の入力値があればカテゴリとタイミングでグルーピングして再表示 --}}
                                 @if (!$nestedCategorizedMedicationRecords->isEmpty())
-                                    <div id="existing_medication_records_wrapper" class="space-y-6"> {{-- idを追加 --}}
+                                    <div id="existing_medication_records_wrapper" class="space-y-6">
                                         @foreach ($displayCategories as $category)
                                             @if ($nestedCategorizedMedicationRecords->has($category->category_name))
                                                 @php
@@ -158,29 +158,16 @@
                                     </div>
                                 @endif
                                 {{-- 全体で薬を追加するボタン (カテゴリやタイミングを特定せずにどこでも追加できる) --}}
-                                {{-- action_buttons_container は廃止し、このボタンのIDでJSから直接操作 --}}
                                 <button type="button" id="add_medication_record_overall" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-lg hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 mt-4">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                     薬の記録を新規追加 (カテゴリ未指定)
                                 </button>
-
-                                {{-- カテゴリごとの追加ボタン群 (通常は常に表示) --}}
-                                <div class="mt-4 flex flex-wrap gap-2" id="category_add_buttons_container"> {{-- IDを追加してJSから操作しやすくする --}}
-                                @if (!empty($displayCategoriesData))
-                                    @foreach($displayCategoriesData as $categoryName => $categoryInfo)
-                                        <button type="button" class="add-medication-record-by-category inline-flex items-center px-3 py-1 bg-green-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105" data-category-name="{{ $categoryName }}">
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                            {{ $categoryName }}に追加
-                                        </button>
-                                    @endforeach
-                                @endif
-                                </div>
                             </div> {{-- #medication_records_container --}}
                         </div> {{-- 動的な薬の服用記録セクション --}}
 
                         {{-- 送信ボタン --}}
                         <div class="flex justify-end">
-                            <button type="submit" class="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-lg font-bold text-sm text-white uppercase tracking-wider shadow-lg hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
+                            <button type="submit" class="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-lg font-bold text-sm text-white uppercase tracking-wider shadow-lg hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
                                 投稿を作成
                             </button>
                         </div>
