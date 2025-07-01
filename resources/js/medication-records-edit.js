@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function getOrCreateCategoryAndTimingGroups(categoryName, timingName, timingTagId) {
         let categoryGroupDiv = medicationRecordsContainer.querySelector(`.category-group[data-category-name="${categoryName}"]`);
-        let medicationItemsContainer; 
+        let medicationItemsContainer;
 
         // #existing_medication_records_wrapper を取得
         let existingRecordsWrapper = document.getElementById('existing_medication_records_wrapper');
