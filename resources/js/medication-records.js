@@ -4,22 +4,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const allMedsTakenCheckbox = document.getElementById('all_meds_taken');
     const reasonNotTakenField = document.getElementById('reason_not_taken_field');
     const medicationRecordsContainer = document.getElementById('medication_records_container');
-    const actionButtonsContainer = document.getElementById('action_buttons_container'); // Blade側で追加したID
+    // const actionButtonsContainer = document.getElementById('action_buttons_container'); // 不要になるので削除
+    const addMedicationRecordOverallButton = document.getElementById('add_medication_record_overall'); // 新たに取得
 
     // Bladeから渡されたデータ（初期値の取得と、新規追加時の選択肢用）
-    // windowオブジェクトからデータを安全に取得し、存在しない場合のデフォルトを設定
     const medicationsData = window.medicationsDataFromBlade || {};
-    const timingTagsData = window.timingTagsFromBlade || {}; // Bladeから渡されるタイミングタグはオブジェクト形式
+    const timingTagsData = window.timingTagsFromBlade || {};
     const displayCategoriesData = window.displayCategoriesFromBlade || {};
 
-    // Bladeで計算されたmedicationRecordIndexを初期値として使用
     let medicationRecordIndex = window.medicationRecordIndexFromBlade || 0;
 
     // 「全ての薬を服用済み」チェックボックスと服用しなかった理由の表示/非表示を切り替える関数
     function toggleReasonNotTaken() {
         if (allMedsTakenCheckbox.checked) {
             reasonNotTakenField.style.display = 'none';
-            // 非表示にする際に、服用しなかった理由のテキストエリアをクリア
             const textarea = reasonNotTakenField.querySelector('textarea');
             if (textarea) textarea.value = '';
         } else {
@@ -35,18 +33,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /**
      * 新しい薬の記録アイテムのHTML要素を作成する関数。
-     * これは「追加」ボタンが押されたときにのみ使用される。
      * @param {number} index - アイテムの一意なインデックス (name属性用)
-     * @param {object} initialData - 初期値を含むオブジェクト {medication_id, timing_tag_id, is_completed, taken_dosage, reason_not_taken}
+     * @param {object} initialData - 初期値を含むオブジェクト
      * @returns {HTMLElement} 作成されたdiv要素
      */
     function createMedicationRecordItem(index, initialData = {}) {
         const itemDiv = document.createElement('div');
-        // 新しく追加されたことがわかるように一時的にborderを追加
         itemDiv.className = 'medication-record-item p-4 border border-gray-200 rounded-md bg-white shadow-sm mb-4 border-2 border-green-500 transition-all duration-300';
         console.log(`新しいアイテムを作成しました (index: ${index})`);
 
-        // 薬の選択肢を生成
         let medicationOptions = '<option value="">薬を選択してください</option>';
         for (const medId in medicationsData) {
             const medication = medicationsData[medId];
@@ -54,7 +49,6 @@ document.addEventListener('DOMContentLoaded', function() {
             medicationOptions += `<option value="${medication.medication_id}" ${isSelected}>${medication.medication_name} (${medication.dosage})</option>`;
         }
 
-        // 服用量の選択肢を生成
         let takenDosageOptions = '<option value="">選択してください</option>';
         for (let i = 1; i <= 10; i++) {
             const isSelected = (initialData.taken_dosage == `${i}錠`) ? 'selected' : '';
@@ -63,11 +57,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const isOtherSelected = (initialData.taken_dosage == 'その他') ? 'selected' : '';
         takenDosageOptions += `<option value="その他" ${isOtherSelected}>その他</option>`;
 
-        // 服用タイミングの選択肢を生成
         let timingTagOptions = '<option value="">タイミングを選択してください</option>';
-        // timingTagsData はオブジェクトなので、Object.values() で配列にする
         Object.values(timingTagsData).forEach(timingTag => {
-            // initialData.timing_tag_id が undefined または null の場合、何も選択されない
             const isSelected = (initialData.timing_tag_id !== undefined && initialData.timing_tag_id !== null && initialData.timing_tag_id == timingTag.timing_tag_id) ? 'selected' : '';
             timingTagOptions += `<option value="${timingTag.timing_tag_id}" ${isSelected}>${timingTag.timing_name}</option>`;
         });
@@ -104,7 +95,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <input type="hidden" name="medications[${index}][reason_not_taken]" value="${reasonNotTakenValue}">
         `;
 
-        // 3秒後に緑のボーダーを消す
         setTimeout(() => {
             itemDiv.classList.remove('border-green-500');
             itemDiv.classList.add('border-gray-200');
@@ -115,17 +105,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /**
      * カテゴリブロックとタイミンググループのHTML要素を取得または作成する関数。
-     * @param {string} categoryName - カテゴリ名
-     * @param {string} timingName - タイミング名
-     * @param {number} timingTagId - タイミングタグID（新規作成時にボタンに紐づけるため）
-     * @returns {Object} { categoryGroupDiv: HTMLElement, timingGroupDiv: HTMLElement, medicationItemsContainer: HTMLElement }
      */
     function getOrCreateCategoryAndTimingGroups(categoryName, timingName, timingTagId) {
         let categoryGroupDiv = medicationRecordsContainer.querySelector(`.category-group[data-category-name="${categoryName}"]`);
         let medicationItemsContainer;
 
-        // #existing_medication_records_wrapper を取得
+        // existing_medication_records_wrapper を取得
         let existingRecordsWrapper = document.getElementById('existing_medication_records_wrapper');
+        // new_medication_records_wrapper を取得（新規追加フォーム用）
+        let newRecordsWrapper = document.getElementById('new_medication_records_wrapper');
 
         // カテゴリグループが存在しない場合は作成
         if (!categoryGroupDiv) {
@@ -133,27 +121,33 @@ document.addEventListener('DOMContentLoaded', function() {
             categoryGroupDiv.className = 'category-group p-4 border border-gray-300 rounded-md bg-white mb-6';
             categoryGroupDiv.setAttribute('data-category-name', categoryName);
 
-            // アイコン生成ロジックとカテゴリ名表示を削除しました。
             categoryGroupDiv.innerHTML = `
                 <h4 class="text-lg font-bold mb-3 flex items-center text-gray-800">
                     <span class="text-purple-600"></span> ${categoryName}
                 </h4>
                 <div class="space-y-4 timing-groups-container"></div>
             `;
+
             // 既存のレコードラッパーが存在しない場合は新しく作成し、適切な位置に挿入
+            // ただし、Blade側で既に #existing_medication_records_wrapper または #new_medication_records_wrapper があるはずなので、基本は既存のものを使う
             if (!existingRecordsWrapper) {
                 existingRecordsWrapper = document.createElement('div');
                 existingRecordsWrapper.id = 'existing_medication_records_wrapper';
                 existingRecordsWrapper.className = 'space-y-6';
-
+                
+                // Blade側に no_medication_records_message がある場合、その直後か、newRecordsWrapper の直後、
+                // または add_medication_record_overall ボタンの直前に挿入する
                 const noRecordsMessage = document.getElementById('no_medication_records_message');
                 if (noRecordsMessage) {
-                    noRecordsMessage.before(existingRecordsWrapper);
+                    noRecordsMessage.after(existingRecordsWrapper);
                     noRecordsMessage.style.display = 'none'; // メッセージを非表示に
-                    console.log('existingRecordsWrapperを作成し、noRecordsMessageの前に挿入しました。');
-                } else if (actionButtonsContainer) { // actionButtonsContainerがあればその前に
-                    actionButtonsContainer.before(existingRecordsWrapper);
-                    console.log('existingRecordsWrapperを作成し、actionButtonsContainerの前に挿入しました。');
+                    console.log('existingRecordsWrapperを作成し、noRecordsMessageの後に挿入しました。');
+                } else if (newRecordsWrapper) {
+                    newRecordsWrapper.before(existingRecordsWrapper); // newRecordsWrapper の前に挿入
+                    console.log('existingRecordsWrapperを作成し、newRecordsWrapperの前に挿入しました。');
+                } else if (addMedicationRecordOverallButton) { // add_medication_record_overall ボタンがあればその前に
+                    addMedicationRecordOverallButton.before(existingRecordsWrapper);
+                    console.log('existingRecordsWrapperを作成し、addMedicationRecordOverallButtonの前に挿入しました。');
                 } else { // なければmedicationRecordsContainerの最後
                     medicationRecordsContainer.appendChild(existingRecordsWrapper);
                     console.log('existingRecordsWrapperを作成し、medicationRecordsContainerの最後に追加しました。');
@@ -198,7 +192,6 @@ document.addEventListener('DOMContentLoaded', function() {
             timingGroupDiv.className = 'timing-group p-3 border border-gray-200 rounded-md bg-gray-50';
             timingGroupDiv.setAttribute('data-timing-name', timingName);
 
-            // タイミング名表示を再挿入
             timingGroupDiv.innerHTML = `
                 <h5 class="font-semibold text-gray-700 text-base mb-2">${timingName}</h5>
                 <div class="medication-record-items-for-timing space-y-3"></div>
@@ -235,7 +228,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             medicationItemsContainer = timingGroupDiv.querySelector('.medication-record-items-for-timing');
         } else {
-            // 既存のタイミンググループの場合、innerHTMLは変更しない
             medicationItemsContainer = timingGroupDiv.querySelector('.medication-record-items-for-timing');
             if (!medicationItemsContainer) {
                 medicationItemsContainer = document.createElement('div');
@@ -248,33 +240,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 「薬の記録を新規追加 (カテゴリ未指定)」ボタンのイベントリスナー
-    // add_medication_record_overall ボタンを処理
-    // イベント委譲ではなく、直接ボタンにイベントリスナーを設定する
-    const addMedicationRecordOverallButton = document.getElementById('add_medication_record_overall');
-    if (addMedicationRecordOverallButton) { // ボタンが存在するか確認
+    if (addMedicationRecordOverallButton) {
         addMedicationRecordOverallButton.addEventListener('click', function() {
-            const item = createMedicationRecordItem(medicationRecordIndex, {}); // 空のオブジェクトを渡す
+            const item = createMedicationRecordItem(medicationRecordIndex, {});
 
-            // 「薬の記録がありません」メッセージがあれば非表示にする
+            // 「薬の記録がありません」メッセージを非表示に
             const noRecordsMessage = document.getElementById('no_medication_records_message');
             if (noRecordsMessage) {
                 noRecordsMessage.style.display = 'none';
                 console.log('「薬の記録がありません」メッセージを非表示にしました。');
             }
 
-            // 新しいフォームは常に actionButtonsContainer の直前に挿入する
-            // もし actionButtonsContainer が見つからなければ、medicationRecordsContainer の末尾に追加
-            if (actionButtonsContainer) {
-                actionButtonsContainer.before(item);
-                console.log('新しいアイテムをactionButtonsContainerの直前に挿入しました。');
+            // 新しいフォームは #new_medication_records_wrapper に挿入
+            const newRecordsWrapper = document.getElementById('new_medication_records_wrapper');
+            if (newRecordsWrapper) {
+                newRecordsWrapper.appendChild(item);
+                console.log('新しいアイテムをnew_medication_records_wrapperに追加しました。');
+            } else if (addMedicationRecordOverallButton) {
+                // new_medication_records_wrapper がない場合のフォールバック（通常は発生しないはず）
+                addMedicationRecordOverallButton.before(item);
+                console.warn('new_medication_records_wrapperが見つからなかったため、add_medication_record_overallボタンの直前にアイテムを追加しました。');
             } else {
-                medicationRecordsContainer.appendChild(item);
-                console.warn('actionButtonsContainerが見つからなかったため、medicationRecordsContainerの末尾にアイテムを追加しました。');
+                medicationRecordsContainer.appendChild(item); // 最終フォールバック
+                console.warn('挿入先が見つからなかったため、medicationRecordsContainerの末尾にアイテムを追加しました。');
             }
             medicationRecordIndex++;
         });
     }
-
 
     // カテゴリ別追加ボタン群のイベントリスナー（イベント委譲）
     medicationRecordsContainer.addEventListener('click', function(event) {
@@ -291,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     firstTimingTag.timing_name,
                     firstTimingTag.timing_tag_id
                 );
-                // 既存の「薬の記録がありません」メッセージがあれば非表示にする
+                // 「薬の記録がありません」メッセージを非表示に
                 const noRecordsMessage = document.getElementById('no_medication_records_message');
                 if (noRecordsMessage) {
                     noRecordsMessage.style.display = 'none';
@@ -299,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const item = createMedicationRecordItem(medicationRecordIndex, {
-                    timing_tag_id: firstTimingTag.timing_tag_id // カテゴリ別追加ではタイミングを自動選択
+                    timing_tag_id: firstTimingTag.timing_tag_id
                 });
                 medicationItemsContainer.appendChild(item);
                 medicationRecordIndex++;
@@ -317,22 +309,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const timingGroupDiv = medicationRecordItem.closest('.timing-group');
             const categoryGroupDiv = medicationRecordItem.closest('.category-group');
 
-            medicationRecordItem.remove(); // 薬の記録アイテムを削除
+            medicationRecordItem.remove();
             console.log('アイテムを削除しました。');
 
-            // 削除後、そのタイミンググループ内に薬の記録が一つもなければ、タイミンググループも削除
             if (timingGroupDiv && timingGroupDiv.querySelectorAll('.medication-record-item').length === 0) {
                 timingGroupDiv.remove();
                 console.log('空になったタイミンググループを削除しました。');
             }
-            // 削除後、そのカテゴリグループ内にタイミンググループが一つもなければ、カテゴリグループも削除
+
             const existingRecordsWrapper = document.getElementById('existing_medication_records_wrapper');
+            const newRecordsWrapper = document.getElementById('new_medication_records_wrapper'); // 新しく追加
+
             if (categoryGroupDiv && categoryGroupDiv.querySelectorAll('.timing-group').length === 0) {
                 categoryGroupDiv.remove();
                 console.log('空になったカテゴリグループを削除しました。');
-                // categoryGroupDiv が削除された場合、それが含まれていた existingRecordsWrapper も空になるかチェック
+
                 if (existingRecordsWrapper && existingRecordsWrapper.querySelectorAll('.category-group').length === 0) {
-                    existingRecordsWrapper.remove(); // existingRecordsWrapper も削除
+                    existingRecordsWrapper.remove();
                     console.log('空になったexistingRecordsWrapperを削除しました。');
                 }
             }
@@ -340,24 +333,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // 全ての薬の記録がなくなった場合、「薬の記録がありません」メッセージを表示
             // medicationRecordsContainer の直下に、.medication-record-item（全体追加分）も .category-group（カテゴリ別追加分）もない場合
             const allItems = medicationRecordsContainer.querySelectorAll('.medication-record-item, .category-group');
-            let noRecordsMessage = document.getElementById('no_medication_records_message'); // 再取得する可能性も考慮
+            let noRecordsMessage = document.getElementById('no_medication_records_message');
 
-            if (allItems.length === 0 && !document.getElementById('existing_medication_records_wrapper')) {
-                if (!noRecordsMessage) { // メッセージがなければ新しく作成
-                    noRecordsMessage = document.createElement('p');
-                    noRecordsMessage.id = 'no_medication_records_message';
-                    noRecordsMessage.className = 'text-gray-600 mb-4';
-                    noRecordsMessage.textContent = '薬の記録がありません。下のボタンで追加してください。';
+            // existing_medication_records_wrapper と new_medication_records_wrapper の両方が空の場合
+            const isExistingWrapperEmpty = !existingRecordsWrapper || existingRecordsWrapper.querySelectorAll('.category-group').length === 0;
+            const isNewWrapperEmpty = !newRecordsWrapper || newRecordsWrapper.querySelectorAll('.medication-record-item').length === 0;
 
-                    // actionButtonsContainer の直前に追加
-                    if (actionButtonsContainer) {
-                        actionButtonsContainer.before(noRecordsMessage);
-                        console.log('「薬の記録がありません」メッセージを新しく作成し、actionButtonsContainerの前に挿入しました。');
-                    } else {
-                        medicationRecordsContainer.appendChild(noRecordsMessage);
-                        console.warn('「薬の記録がありません」メッセージの挿入先が見つからなかったため、medicationRecordsContainerの末尾に追加しました。');
-                    }
-                } else { // メッセージがあれば表示
+            if (isExistingWrapperEmpty && isNewWrapperEmpty) {
+                if (noRecordsMessage) {
                     noRecordsMessage.style.display = 'block';
                     console.log('「薬の記録がありません」メッセージを再表示しました。');
                 }
@@ -374,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const timingName = event.target.dataset.timingName;
             const categoryName = event.target.dataset.categoryName;
 
-            // 既存の「薬の記録がありません」メッセージがあれば非表示にする
+            // 「薬の記録がありません」メッセージを非表示に
             const noRecordsMessage = document.getElementById('no_medication_records_message');
             if (noRecordsMessage) {
                 noRecordsMessage.style.display = 'none';
@@ -382,35 +365,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const newItem = createMedicationRecordItem(medicationRecordIndex, {
-                timing_tag_id: timingTagId // クリックされたタイミングタグのIDを初期値として設定
+                timing_tag_id: timingTagId
             });
             medicationItemsContainer.appendChild(newItem);
             medicationRecordIndex++;
             console.log(`タイミング別アイテムを追加しました (タイミング: ${timingName}, インデックス: ${medicationRecordIndex - 1})`);
         }
     });
-
-    // ページロード時に既存の項目がなければ一つ追加 (またはメッセージ表示)
-    // このロジックは、Bladeでold('medications')が空の場合にのみ実行されるようにします。
-    // Bladeの @if (!$nestedCategorizedMedicationRecords->isEmpty()) と連携するため、
-    // JavaScript側では既存のレコードラッパーが存在しない場合のみ初回追加を試みます。
-    const existingRecordsWrapperOnLoad = document.getElementById('existing_medication_records_wrapper');
-    const noRecordsMessageOnLoad = document.getElementById('no_medication_records_message');
-
-    if (!existingRecordsWrapperOnLoad && medicationRecordIndex === 0) { // 既存のレコードが全くなく、かつインデックスも0の場合
-        if (noRecordsMessageOnLoad) { // 「薬の記録がありません」メッセージが表示されている場合
-            // 何もせず、ユーザーにボタンを押してもらう
-            console.log('既存の記録がないため、「薬の記録がありません」メッセージが表示されています。ユーザーの操作を待ちます。');
-        } else { // メッセージもない場合（通常はBladeで表示されているはず）
-            // 例外的な状況だが、念のため追加ボタンが動作するように設定
-            console.warn('既存のレコードもメッセージも存在しない予期せぬ状態です。最初のアイテムを自動追加します。');
-            const item = createMedicationRecordItem(medicationRecordIndex, {});
-            if (actionButtonsContainer) {
-                actionButtonsContainer.before(item);
-            } else {
-                medicationRecordsContainer.appendChild(item);
-            }
-            medicationRecordIndex++;
-        }
-    }
 });
