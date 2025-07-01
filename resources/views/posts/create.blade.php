@@ -158,10 +158,12 @@
                                     </div>
                                 @endif
                                 {{-- 全体で薬を追加するボタン (カテゴリやタイミングを特定せずにどこでも追加できる) --}}
-                                <button type="button" id="add_medication_record_overall" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-lg hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 mt-4">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                    薬の記録を新規追加 (カテゴリ未指定)
-                                </button>
+                                <div class="flex justify-center mt-4">
+                                    <button type="button" id="add_medication_record_overall" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-lg hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 mt-4">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                        薬の記録を新規追加 (カテゴリ未指定)
+                                    </button>
+                                </div>
                             </div> {{-- #medication_records_container --}}
                         </div> {{-- 動的な薬の服用記録セクション --}}
 
