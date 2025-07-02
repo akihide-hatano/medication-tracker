@@ -37,10 +37,8 @@
             </div>
         </div>
     </div>
-
-    {{-- JavaScriptファイルを読み込む前に、必要なデータをグローバル変数として渡す --}}
+     {{-- @json はPHPの変数を安全なJSON形式のJavaScriptオブジェクトに変換します --}}
     <script>
-        // @json はPHPの変数を安全なJSON形式のJavaScriptオブジェクトに変換します
         window.medicationStatusByDayFromBlade = @json($medicationStatusByDay);
         window.calendarDateYearFromBlade = {{ $date->year }};
         window.calendarDateMonthFromBlade = {{ $date->month }};
