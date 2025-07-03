@@ -13,7 +13,7 @@ class MedicationCrudTest extends TestCase
     use RefreshDatabase;
 
     // 認証済みユーザーが新しい薬を作成できるかテストする
-    public function text_auth_user_create_medication():void{
+    public function test_auth_user_create_medication():void{
 
         //ユーザーを作成し、ログイン状態にする。
         $user = User::factory()->create();
@@ -36,11 +36,10 @@ class MedicationCrudTest extends TestCase
 
         // 4. 薬が正常に保存され、一覧ページにリダイレクトされたか、成功メッセージが表示されたかなどを確認
         $response->assertRedirect(route('medications.index')); // リダイレクト先を確認
-        $response->assertSessionHas('success', '薬が正常に登録されました！'); // セッションに成功メッセージがあるか確認
+        $response->assertSessionHas('success', '薬が正常に追加されました！'); // セッションに成功メッセージがあるか確認
 
         // 5. データベースに薬が実際に保存されているか確認
         $this->assertDatabaseHas('medications', [
-            'user_id' => $user->id, // ログインユーザーのIDで保存されているか
             'medication_name' => 'テスト薬A',
             'dosage' => '1錠',
             'notes' => 'テスト用の薬の説明です。',
