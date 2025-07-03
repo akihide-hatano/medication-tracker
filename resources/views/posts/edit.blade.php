@@ -63,11 +63,9 @@
                                 薬の服用記録
                             </h3>
                             <div id="medication_records_container">
-                                {{-- 既存の薬の記録があればカテゴリとタイミングでグルーピングして表示 --}}
                                 @if (!$nestedCategorizedMedicationRecords->isEmpty())
                                     <div id="existing_medication_records_wrapper" class="space-y-6">
                                         @foreach ($displayCategories as $category)
-                                            {{-- nestedCategorizedMedicationRecords にそのカテゴリの記録があるか確認 --}}
                                             @if ($nestedCategorizedMedicationRecords->has($category->category_name))
                                                 @php
                                                     $categoryName = $category->category_name;
