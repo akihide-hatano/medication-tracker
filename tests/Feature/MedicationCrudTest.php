@@ -96,4 +96,12 @@ class MedicationCrudTest extends TestCase
         $response->assertSee($medication2->side_effects);
 
     }
+
+    public function test_auth_show_medication():void{
+        //ユーザーを作成してLogin状態であることを立証
+        $user = User::factory()->create();
+        $this->actingAs($user);
+    }
+
+
 }
