@@ -74,7 +74,7 @@
                                                     switch ($categoryName) {
                                                         case '朝': $categoryIcon = '<img src="' . asset('images/morning.png') . '" alt="朝" class="' . $iconBaseClass . '">'; break;
                                                         case '昼': $categoryIcon = '<img src="' . asset('images/noon.png') . '" alt="昼" class="' . $iconBaseClass . '">'; break;
-                                                        case '夕': $categoryIcon = '<img src="' . asset('images/evenig.png') . '" alt="夕" class="' . $iconBaseClass . '">'; break;
+                                                        case '夕': $categoryIcon = '<img src="' . asset('images/evening.png') . '" alt="夕" class="' . $iconBaseClass . '">'; break;
                                                         case '寝る前': $categoryIcon = '<img src="' . asset('images/night.png') . '" alt="寝る前" class="' . $iconBaseClass . '">'; break;
                                                         case '頓服': $categoryIcon = '<img src="' . asset('images/prn.png') . '" alt="頓服" class="' . $iconBaseClass . '">'; break;
                                                         case 'その他': $categoryIcon = '<img src="' . asset('images/other.png') . '" alt="その他" class="' . $iconBaseClass . '">'; break;

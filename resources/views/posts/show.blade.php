@@ -82,7 +82,7 @@
                                                     $categoryIcon = '<img src="' . asset('images/noon.png') . '" alt="昼" class="' . $iconBaseClass . '">';
                                                     break;
                                                 case '夕':
-                                                    $categoryIcon = '<img src="' . asset('images/evenig.png') . '" alt="夕" class="' . $iconBaseClass . '">';
+                                                    $categoryIcon = '<img src="' . asset('images/evening.png') . '" alt="夕" class="' . $iconBaseClass . '">';
                                                     break;
                                                 case '寝る前':
                                                     $categoryIcon = '<img src="' . asset('images/night.png') . '" alt="寝る前" class="' . $iconBaseClass . '">';
