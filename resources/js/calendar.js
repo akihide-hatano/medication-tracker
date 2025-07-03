@@ -44,9 +44,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // もし現在の日付が今日の日付と一致する場合、特別なCSSクラスを追加して強調表示します。
         const today = new Date();
-        if (year === today.getFullYear() && month === (today.getMonth() + 1) && day === today.getDate()) {
-            dayCell.classList.add('bg-blue-100', 'border-blue-400', 'font-bold');
-        }
+    if (year === today.getFullYear() && month === (today.getMonth() + 1) && day === today.getDate()) {
+        // ★★★ 既存の背景色とボーダー色、ホバー色を削除する ★★★
+        dayCell.classList.remove('bg-white', 'border-gray-200', 'hover:bg-gray-50'); 
+        // ★★★ 新しいクラスを追加する ★★★
+        dayCell.classList.add('bg-blue-200', 'border-blue-500', 'font-bold', 'hover:bg-blue-300'); 
+    }
+
 
         // 日付セル全体をクリック可能にするための<a>要素を作成します。
         const cellLink = document.createElement('a');
@@ -74,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // ツールチップのテキストを初期化します。
         let tooltipText = '';
         // セルに表示する薬の名前やステータスのテキストを初期化します。
-        let displayStatusText = ''; // 変数名を 'displayMedNames' から変更
+        let displayStatusText = '';
 
         // その日のデータが存在するかどうかを確認します。
         if (dayData) {
