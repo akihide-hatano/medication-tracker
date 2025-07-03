@@ -491,27 +491,26 @@ public function edit(Post $post)
         ->whereDate('post_date', $date)
         ->orderBy('post_date', 'desc')
         ->get();
-
         // $displayCategories の定義を TimingTag モデルから取得するように変更
         $displayCategories = TimingTag::whereNotNull('category_name')
-            ->orderBy('category_order')
-            ->get()
-            ->unique('category_name')
-            ->values();
-
+        ->orderBy('category_order')
+        ->get()
+        ->unique('category_name')
+        ->values();
+        
         // 2. 各投稿ごとの nestedCategorizedMedicationRecords の生成
         // $posts コレクションの各Postオブジェクトに、nestedCategorizedMedicationRecords プロパティを追加します。
-        $posts->each(function($post_item){
-            $nestedCategorizedMedicationRecords = $post_item->postMedicationRecords
-                ->groupBy(function($record){
+        $posts->each(function($post_item){ // ① $postsコレクションの各要素を順番に処理
+            $nestedCategorizedMedicationRecords = $post_item->postMedicationRecords // ② その投稿に紐づく内服記録を取得
+                ->groupBy(function($record){ // ③ 内服記録をカテゴリ（例：朝、昼、夕）でグループ化
                     return $record->timingTag->category_name ?? 'その他';
                 })
-                ->map(function($categoryGroup) {
+                ->map(function($categoryGroup) { // ④ 各カテゴリ内の内服記録をタイミング（例：食前、食後）でさらにグループ化
                     return $categoryGroup->groupBy(function ($record){
                         return $record->timingTag->timing_name ?? '不明なタイミング';
                     });
                 });
-                $post_item->nestedCategorizedMedicationRecords = $nestedCategorizedMedicationRecords;
+            $post_item->nestedCategorizedMedicationRecords = $nestedCategorizedMedicationRecords; // ⑤ 整形したデータをその投稿オブジェクトに追加
         });
         return view('posts.daily_detail', compact('posts', 'date','displayCategories'));
     }
