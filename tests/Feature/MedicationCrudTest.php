@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase; // テストごとにデータベースをクリーンな状態にする
-use Illuminate\Foundation\Testing\WithFaker; // ダミーデータ生成用（今回は使わないが、一般的なので残しておく）
-use Tests\TestCase; // Laravelの機能テストの基底クラス
-use App\Models\User; // ユーザーモデル
-use App\Models\Medication; // 薬モデル
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
+use Tests\TestCase;
+use App\Models\User;
+use App\Models\Medication;
+use Database\Factories\MedicationFactory; // この行は正しいです
 
 class MedicationCrudTest extends TestCase
 {
@@ -47,5 +48,52 @@ class MedicationCrudTest extends TestCase
             'side_effects' => '副作用テスト',
         ]);
         $this->assertDatabaseCount('medications', 1); // データベースに薬が1件追加されたことを確認
+    }
+
+    public function test_auth_user_view_medication_index():void
+    {
+        //ユーザーのログイン
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+                // テスト用の薬を複数作成する
+        // これらの薬は特定のユーザーには紐づきません（グローバルなマスターリストのため）
+        $medication1 = Medication::factory()->create([
+            'medication_name' => 'テスト薬1',
+            'dosage' => '10mg',
+            'notes' => 'テストノート1',
+            'effect' => '効果1',
+            'side_effects' => '副作用1',
+        ]);
+        $medication2 = Medication::factory()->create([
+            'medication_name' => 'テスト薬2',
+            'dosage' => '20ml',
+            'notes' => 'テストノート2',
+            'effect' => '効果2',
+            'side_effects' => '副作用2',
+        ]);
+
+        //内服薬の一覧pageがgetリクエストを送信しているか確認
+        $response = $this ->get(route('medications.index'));
+
+        //ステータスコードが200であること
+        $response->assertStatus(200);
+
+
+        // 作成した全ての薬の名前と、その他の詳細情報がページに表示されていることを確認
+        // medication1 の情報
+        $response->assertSee($medication1->medication_name);
+        $response->assertSee($medication1->dosage);
+        $response->assertSee($medication1->notes);
+        $response->assertSee($medication1->effect);
+        $response->assertSee($medication1->side_effects);
+
+        // medication2 の情報
+        $response->assertSee($medication2->medication_name);
+        $response->assertSee($medication2->dosage);
+        $response->assertSee($medication2->notes);
+        $response->assertSee($medication2->effect);
+        $response->assertSee($medication2->side_effects);
+
     }
 }
