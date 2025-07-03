@@ -9,6 +9,22 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
+                    {{-- 成功/エラーメッセージの表示 --}}
+                    @if (session('success'))
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+                    @if (session('error'))
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                            <ul>
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
                         <h3 class="text-xl font-bold text-blue-800">{{ $date->format('Y年m月d日') }} の投稿詳細</h3>
                         <a href="{{ route('posts.calendar', ['year' => $date->copy()->subMonth()->year, 'month' => $date->copy()->subMonth()->month]) }}" class="mt-2 inline-flex items-center text-blue-600 hover:text-blue-800 text-sm">
@@ -27,75 +43,152 @@
                                 <div class="bg-gradient-to-br from-blue-50 to-blue-200 p-7 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                                     <h3 class="text-2xl font-extrabold text-blue-800 mb-4 flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days mr-3 text-blue-600"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
-                                        {{ $post->post_date->format('Y年m月d日') }} の内服管理
+                                        {{ $post->post_date->format('Y年m月d日') }} の内服管理 (ID: {{ $post->post_id }})
                                     </h3>
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">ユーザー:</strong> {{ $post->user->name ?? '不明なユーザー' }}</p>
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">メモ:</strong> {{ $post->content ?? 'なし' }}</p>
-                                    <p class="text-sm text-gray-700 mb-2 flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucude-pill mr-2 text-green-600"><path d="m10.5 20.5 9.5-9.5a4.5 4.5 0 0 0-7.5-7.5L3.5 13.5a4.5 4.5 0 0 0 7.5 7.5Z"/><path d="m14 14 3 3"/><path d="m15 6 3-3"/><path d="m2 22 1-1"/><path d="m19 5 1-1"/></svg>
-                                        <strong class="text-gray-800">記録された薬の数:</strong> {{ $post->postMedicationRecords->count() }}種類
-                                    </p>
 
-                                    {{-- 内服薬と服用タイミングの記録詳細 --}}
-                                    @if ($post->postMedicationRecords->isNotEmpty())
-                                        <div class="mb-4 text-sm bg-blue-100 p-3 rounded-md border border-blue-200">
-                                            <strong class="text-gray-800 flex items-center mb-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-syringe mr-1 text-purple-600"><path d="m21 21-4.3-4.3a6.5 6.5 0 1 0-4.24-4.24Z"/><path d="m19 14 1.5 1.5"/><path d="M9.4 10.6 5 15"/><path d="M14.8 6.2 19 2"/></svg>
-                                                内服薬の記録詳細:
-                                            </strong>
-                                            <ul class="space-y-2">
-                                                @foreach ($post->postMedicationRecords as $record)
-                                                    <li class="p-2 rounded-md bg-white border border-gray-200 shadow-sm">
-                                                        {{-- ★★★ここを修正：post_dateをクエリパラメータとして追加★★★ --}}
-                                                        <a href="{{ route('medications.show', ['medication' => $record->medication->medication_id, 'from_date' => $post->post_date->format('Y-m-d')]) }}" class="font-bold text-blue-800 block mb-1 hover:underline cursor-pointer">
-                                                            {{ $record->medication->medication_name ?? '不明な薬' }}
-                                                        </a>
-                                                        {{-- ★★★ここまで修正★★★ --}}
-                                                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                                            @if ($record->timingTag)
-                                                                <span class="inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full
-                                                                        @if ($record->is_completed)
-                                                                            bg-green-200 text-green-800
-                                                                        @else
-                                                                            bg-red-200 text-red-800
-                                                                        @endif">
-                                                                    {{ $record->timingTag->timing_name ?? '不明なタイミング' }}
-                                                                    @if ($record->is_completed)
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check ml-1"><path d="M20 6 9 17l-5-5"/></svg>
-                                                                    @else
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x ml-1"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                                                                    @endif
-                                                                </span>
-                                                            @else
-                                                                <span class="text-gray-500 text-xs">(服用タイミングの記録なし)</span>
-                                                            @endif
-                                                        </div>
-                                                        {{-- その他の詳細情報があればここに追加 --}}
-                                                        <p class="text-xs text-gray-600 mt-1">服用量: {{ $record->taken_dosage ?? '未記録' }}</p>
-                                                        <p class="text-xs text-gray-600">服用時刻: {{ $record->taken_at ? Carbon\Carbon::parse($record->taken_at)->format('H:i') : '未記録' }}</p>
-                                                        @if ($record->reason_not_taken)
-                                                            <p class="text-xs text-gray-600">服用しなかった理由: {{ $record->reason_not_taken }}</p>
-                                                        @endif
-                                                    </li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
-                                    @else
-                                        <p class="mb-4 text-sm text-gray-600 bg-gray-100 p-3 rounded-md border border-gray-200">この投稿には薬の記録がありません。</p>
-                                    @endif
-
-                                    <p class="text-sm text-gray-700 mb-4 flex items-center">
-                                        @if($post->all_meds_taken)
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle mr-2 text-green-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
-                                            <strong class="text-gray-800">内服状況:</strong> <span class="font-bold text-green-700">全て服用済み</span>
+                                    <div class="mb-4">
+                                        <h3 class="text-lg font-semibold text-gray-800 mb-2">服薬状況</h3>
+                                        @if ($post->all_meds_taken)
+                                            <p class="text-green-600 font-bold flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-2 mr-1"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                                                全ての薬を服用済みです。
+                                            </p>
                                         @else
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle mr-2 text-red-500"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
-                                            <strong class="text-gray-800">内服状況:</strong> <span class="font-bold text-red-700">未完了あり</span>
-                                            @if($post->reason_not_taken)
-                                                <span class="ml-2 text-xs text-gray-600">(理由: {{ Str::limit($post->reason_not_taken, 50) }})</span>
+                                            <p class="text-red-600 font-bold flex items-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle mr-1"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                                                全ての薬は服用されていません。
+                                            </p>
+                                            @if ($post->reason_not_taken)
+                                                <p class="text-gray-700 mt-2 ml-6">理由: {{ $post->reason_not_taken }}</p>
                                             @endif
                                         @endif
-                                    </p>
+                                    </div>
+
+                                    <div class="mb-6">
+                                        <h3 class="text-lg font-semibold text-gray-800 mb-2">個別の服薬記録</h3>
+                                        @php
+                                            // ここで $post->postMedicationRecords をカテゴリとタイミングでグルーピング
+                                            // timing_tag_id と category_id でソートされた状態のレコードを仮定
+                                            // 実際のアプリケーションでは、コントローラーでこれを処理する方が良いですが、
+                                            // ここでは Blade 内で簡易的に処理します。
+
+                                            $nestedCategorizedMedicationRecords = $post->postMedicationRecords
+                                                ->groupBy(function($record) {
+                                                    return $record->timingTag->category->category_name ?? 'その他';
+                                                })
+                                                ->map(function($categoryGroup) {
+                                                    return $categoryGroup->groupBy(function($record) {
+                                                        return $record->timingTag->timing_name ?? '不明なタイミング';
+                                                    });
+                                                });
+
+                                            // カテゴリの表示順を定義 (例: Controllerから渡される displayCategories と合わせる)
+                                            // コントローラーから $displayCategories が渡されない場合は、ここにハードコードするか、
+                                            // $post->postMedicationRecords から動的に取得する必要があります。
+                                            // 今回は、post_dateから取得できるdisplayCategoriesを想定します。
+                                            // (もしdisplayCategoriesが別途必要なら、コントローラで取得してdaily_detailに渡す必要があります)
+                                            $displayCategories = \App\Models\Category::orderBy('order_column_name_if_exists')->get(); // 例: カテゴリの表示順をDBから取得
+                                            if ($displayCategories->isEmpty()) {
+                                                // カテゴリがDBにない場合のフォールバック（例：朝、昼、夕、寝る前、頓服、その他）
+                                                $displayCategories = collect([
+                                                    (object)['category_name' => '朝'],
+                                                    (object)['category_name' => '昼'],
+                                                    (object)['category_name' => '夕'],
+                                                    (object)['category_name' => '寝る前'],
+                                                    (object)['category_name' => '頓服'],
+                                                    (object)['category_name' => 'その他'],
+                                                ]);
+                                            }
+                                        @endphp
+
+                                        @if ($post->postMedicationRecords->isEmpty())
+                                            <p class="text-gray-600">この投稿には薬の記録がありません。</p>
+                                        @else
+                                            <div class="space-y-6">
+                                                @foreach ($displayCategories as $category)
+                                                    @if ($nestedCategorizedMedicationRecords->has($category->category_name))
+                                                        @php
+                                                            $categoryName = $category->category_name;
+                                                            $blockClass = "category-block-{$categoryName}";
+                                                            $textColorClass = "category-text-{$categoryName}";
+                                                            $iconColorClass = "category-icon-{$categoryName}";
+
+                                                            // カテゴリごとのアイコン設定 (IMGタグ)
+                                                            $categoryIcon = '';
+                                                            $iconBaseClass = 'w-12 h-12 mr-2';
+                                                            switch ($categoryName) {
+                                                                case '朝':
+                                                                    $categoryIcon = '<img src="' . asset('images/morning.png') . '" alt="朝" class="' . $iconBaseClass . '">';
+                                                                    break;
+                                                                case '昼':
+                                                                    $categoryIcon = '<img src="' . asset('images/noon.png') . '" alt="昼" class="' . $iconBaseClass . '">';
+                                                                    break;
+                                                                case '夕':
+                                                                    $categoryIcon = '<img src="' . asset('images/evening.png') . '" alt="夕" class="' . $iconBaseClass . '">'; // corrected typo
+                                                                    break;
+                                                                case '寝る前':
+                                                                    $categoryIcon = '<img src="' . asset('images/night.png') . '" alt="寝る前" class="' . $iconBaseClass . '">';
+                                                                    break;
+                                                                case '頓服':
+                                                                    $categoryIcon = '<img src="' . asset('images/prn.png') . '" alt="頓服" class="' . $iconBaseClass . '">';
+                                                                    break;
+                                                                case 'その他':
+                                                                    $categoryIcon = '<img src="' . asset('images/other.png') . '" alt="その他" class="' . $iconBaseClass . '">';
+                                                                    break;
+                                                                default:
+                                                                    $categoryIcon = '<img src="' . asset('images/default.png') . '" alt="デフォルト" class="' . $iconBaseClass . '">';
+                                                                    break;
+                                                            }
+                                                        @endphp
+
+                                                        <div class="category-block {{ $blockClass }}">
+                                                            <h4 class="text-lg font-bold mb-3 flex items-center {{ $textColorClass }}">
+                                                                <span class="{{ $iconColorClass }}">{!! $categoryIcon !!}</span>
+                                                                {{ $categoryName }}
+                                                            </h4>
+                                                            <div class="space-y-2">
+                                                                @foreach ($nestedCategorizedMedicationRecords->get($categoryName) as $timingName => $recordsInTiming)
+                                                                    <div class="ml-4 p-2 rounded-md border border-gray-200 bg-gray-50">
+                                                                        <h5 class="font-semibold text-gray-700 text-base mb-1">{{ $timingName }}</h5>
+                                                                        <ul class="list-disc list-inside space-y-1 text-sm text-gray-800">
+                                                                            @foreach ($recordsInTiming as $record)
+                                                                                <li class="flex items-center">
+                                                                                    <span class="ml-4 text-lg">
+                                                                                        @if ($record->medication)
+                                                                                            <a href="{{ route('medications.show', ['medication' => $record->medication->medication_id, 'from_post_id' => $post->post_id]) }}" class="font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+                                                                                                {{ $record->medication->medication_name ?? '不明な薬' }}
+                                                                                            </a>
+                                                                                        @else
+                                                                                            <span class="font-semibold">不明な薬</span>
+                                                                                        @endif
+                                                                                    </span>
+
+                                                                                    @if ($record->taken_dosage)
+                                                                                        <span class="ml-2 text-gray-700 text-lg">{{ $record->taken_dosage }}</span>
+                                                                                    @endif
+
+                                                                                    <span class="ml-auto flex items-center">
+                                                                                        @if ($record->is_completed)
+                                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle mr-1 text-green-600"><circle cx="12" cy="12" r="10"/></svg>
+                                                                                        @else
+                                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle mr-1 text-red-600"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                                                                                            @if ($record->reason_not_taken) <span class="ml-1 text-xs text-gray-600">(理由: {{ Str::limit($record->reason_not_taken, 20) }})</span> @endif
+                                                                                        @endif
+                                                                                    </span>
+                                                                                </li>
+                                                                            @endforeach
+                                                                        </ul>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
 
                                     <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-300">
                                         <a href="{{ route('posts.show', $post->post_id) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
