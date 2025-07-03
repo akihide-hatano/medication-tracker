@@ -492,6 +492,27 @@ public function edit(Post $post)
         ->orderBy('post_date', 'desc')
         ->get();
 
-        return view('posts.daily_detail', compact('posts', 'date'));
+        // $displayCategories の定義を TimingTag モデルから取得するように変更
+        $displayCategories = TimingTag::whereNotNull('category_name')
+            ->orderBy('category_order')
+            ->get()
+            ->unique('category_name')
+            ->values();
+
+        // 2. 各投稿ごとの nestedCategorizedMedicationRecords の生成
+        // $posts コレクションの各Postオブジェクトに、nestedCategorizedMedicationRecords プロパティを追加します。
+        $posts->each(function($post_item){
+            $nestedCategorizedMedicationRecords = $post_item->postMedicationRecords
+                ->groupBy(function($record){
+                    return $record->timingTag->category_name ?? 'その他';
+                })
+                ->map(function($categoryGroup) {
+                    return $categoryGroup->groupBy(function ($record){
+                        return $record->timingTag->timing_name ?? '不明なタイミング';
+                    });
+                });
+                $post_item->nestedCategorizedMedicationRecords = $nestedCategorizedMedicationRecords;
+        });
+        return view('posts.daily_detail', compact('posts', 'date','displayCategories'));
     }
 }

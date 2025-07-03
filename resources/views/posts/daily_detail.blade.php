@@ -5,28 +5,6 @@
         </h2>
     </x-slot>
 
-    @php
-        // Carbonクラスのuseステートメントは、Bladeの@phpブロック内では使えません。
-        // 代わりに、Carbonを呼び出す際にフルパス（\Carbon\Carbon::parse(...)）を使用するか、
-        // コントローラーで日付オブジェクトをCarbonインスタンスとして渡すようにします。
-        // もしコントローラーで既にCarbonインスタンスとして渡されているなら、
-        // この use Carbon\Carbon; は不要です。
-        // $date が既に Carbon インスタンスであるため、問題ありません。
-        // post->taken_at もCarbonインスタンスであれば、Carbon::parse は不要です。
-
-        // Categoryモデルがないため、displayCategoriesをここで定義します。
-        // 実際のアプリケーションでは、TimingTagモデルからカテゴリ情報を取得するか、
-        // データベースにCategoryテーブルとモデルを作成し、コントローラーで取得することを推奨します。
-        $displayCategories = collect([
-            (object)['category_name' => '朝'],
-            (object)['category_name' => '昼'],
-            (object)['category_name' => '夕'],
-            (object)['category_name' => '寝る前'],
-            (object)['category_name' => '頓服'],
-            (object)['category_name' => 'その他'],
-        ]);
-    @endphp
-
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -70,7 +48,7 @@
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">ユーザー:</strong> {{ $post->user->name ?? '不明なユーザー' }}</p>
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">メモ:</strong> {{ $post->content ?? 'なし' }}</p>
 
-                                    {{-- 個別の投稿カード内に、show.blade.php の服薬状況と個別の服薬記録セクションを統合 --}}
+                                    {{-- 個別の投稿カード内に、服薬状況セクションを統合 --}}
                                     <div class="mb-4">
                                         <h3 class="text-lg font-semibold text-gray-800 mb-2">服薬状況</h3>
                                         @if ($post->all_meds_taken)
@@ -91,28 +69,13 @@
 
                                     <div class="mb-6">
                                         <h3 class="text-lg font-semibold text-gray-800 mb-2">個別の服薬記録</h3>
-                                        @php
-                                            // 各$postのpostMedicationRecordsをカテゴリとタイミングでグルーピング
-                                            // TimingTagモデルのcategory_nameとtiming_nameプロパティに直接アクセスすることを想定
-                                            $nestedCategorizedMedicationRecords = $post->postMedicationRecords
-                                                ->groupBy(function($record) {
-                                                    // TimingTagが存在しない場合やcategory_nameがない場合のフォールバック
-                                                    return $record->timingTag->category_name ?? 'その他';
-                                                })
-                                                ->map(function($categoryGroup) {
-                                                    return $categoryGroup->groupBy(function($record) {
-                                                        // TimingTagが存在しない場合やtiming_nameがない場合のフォールバック
-                                                        return $record->timingTag->timing_name ?? '不明なタイミング';
-                                                    });
-                                                });
-                                        @endphp
-
-                                        @if ($post->postMedicationRecords->isEmpty())
+                                        {{-- コントローラーで $post->nestedCategorizedMedicationRecords を生成しているので、それを直接使う --}}
+                                        @if ($post->nestedCategorizedMedicationRecords->isEmpty())
                                             <p class="text-gray-600">この投稿には薬の記録がありません。</p>
                                         @else
                                             <div class="space-y-6">
                                                 @foreach ($displayCategories as $category)
-                                                    @if ($nestedCategorizedMedicationRecords->has($category->category_name))
+                                                    @if ($post->nestedCategorizedMedicationRecords->has($category->category_name))
                                                         @php
                                                             $categoryName = $category->category_name;
                                                             $blockClass = "category-block-{$categoryName}";
@@ -152,7 +115,8 @@
                                                                 {{ $categoryName }}
                                                             </h4>
                                                             <div class="space-y-2">
-                                                                @foreach ($nestedCategorizedMedicationRecords->get($categoryName) as $timingName => $recordsInTiming)
+                                                                {{-- コントローラーで $post->nestedCategorizedMedicationRecords に追加しているので、それを使用 --}}
+                                                                @foreach ($post->nestedCategorizedMedicationRecords->get($categoryName) as $timingName => $recordsInTiming)
                                                                     <div class="ml-4 p-2 rounded-md border border-gray-200 bg-gray-50">
                                                                         <h5 class="font-semibold text-gray-700 text-base mb-1">{{ $timingName }}</h5>
                                                                         <ul class="list-disc list-inside space-y-1 text-sm text-gray-800">
@@ -197,7 +161,7 @@
                                         <a href="{{ route('posts.show', $post->post_id) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
                                             詳細
                                         </a>
-                                        <a href="{{ route('posts.edit', $post->post_id) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
+                                        <a href="{{ route('posts.edit', $post->post_id) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus->ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
                                             編集
                                         </a>
                                         <form action="{{ route('posts.destroy', $post->post_id) }}" method="POST" onsubmit="return confirm('本当にこの投稿を削除しますか？ この操作は元に戻せません。');">
