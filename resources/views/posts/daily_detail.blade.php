@@ -5,6 +5,28 @@
         </h2>
     </x-slot>
 
+    @php
+        // Carbonクラスのuseステートメントは、Bladeの@phpブロック内では使えません。
+        // 代わりに、Carbonを呼び出す際にフルパス（\Carbon\Carbon::parse(...)）を使用するか、
+        // コントローラーで日付オブジェクトをCarbonインスタンスとして渡すようにします。
+        // もしコントローラーで既にCarbonインスタンスとして渡されているなら、
+        // この use Carbon\Carbon; は不要です。
+        // $date が既に Carbon インスタンスであるため、問題ありません。
+        // post->taken_at もCarbonインスタンスであれば、Carbon::parse は不要です。
+
+        // Categoryモデルがないため、displayCategoriesをここで定義します。
+        // 実際のアプリケーションでは、TimingTagモデルからカテゴリ情報を取得するか、
+        // データベースにCategoryテーブルとモデルを作成し、コントローラーで取得することを推奨します。
+        $displayCategories = collect([
+            (object)['category_name' => '朝'],
+            (object)['category_name' => '昼'],
+            (object)['category_name' => '夕'],
+            (object)['category_name' => '寝る前'],
+            (object)['category_name' => '頓服'],
+            (object)['category_name' => 'その他'],
+        ]);
+    @endphp
+
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -43,11 +65,12 @@
                                 <div class="bg-gradient-to-br from-blue-50 to-blue-200 p-7 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                                     <h3 class="text-2xl font-extrabold text-blue-800 mb-4 flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days mr-3 text-blue-600"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
-                                        {{ $post->post_date->format('Y年m月d日') }} の内服管理 (ID: {{ $post->post_id }})
+                                        {{ $post->post_date->format('Y年m月d日') }} の内服状況 (ID: {{ $post->post_id }})
                                     </h3>
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">ユーザー:</strong> {{ $post->user->name ?? '不明なユーザー' }}</p>
                                     <p class="text-sm text-gray-700 mb-2"><strong class="text-gray-800">メモ:</strong> {{ $post->content ?? 'なし' }}</p>
 
+                                    {{-- 個別の投稿カード内に、show.blade.php の服薬状況と個別の服薬記録セクションを統合 --}}
                                     <div class="mb-4">
                                         <h3 class="text-lg font-semibold text-gray-800 mb-2">服薬状況</h3>
                                         @if ($post->all_meds_taken)
@@ -69,38 +92,19 @@
                                     <div class="mb-6">
                                         <h3 class="text-lg font-semibold text-gray-800 mb-2">個別の服薬記録</h3>
                                         @php
-                                            // ここで $post->postMedicationRecords をカテゴリとタイミングでグルーピング
-                                            // timing_tag_id と category_id でソートされた状態のレコードを仮定
-                                            // 実際のアプリケーションでは、コントローラーでこれを処理する方が良いですが、
-                                            // ここでは Blade 内で簡易的に処理します。
-
+                                            // 各$postのpostMedicationRecordsをカテゴリとタイミングでグルーピング
+                                            // TimingTagモデルのcategory_nameとtiming_nameプロパティに直接アクセスすることを想定
                                             $nestedCategorizedMedicationRecords = $post->postMedicationRecords
                                                 ->groupBy(function($record) {
-                                                    return $record->timingTag->category->category_name ?? 'その他';
+                                                    // TimingTagが存在しない場合やcategory_nameがない場合のフォールバック
+                                                    return $record->timingTag->category_name ?? 'その他';
                                                 })
                                                 ->map(function($categoryGroup) {
                                                     return $categoryGroup->groupBy(function($record) {
+                                                        // TimingTagが存在しない場合やtiming_nameがない場合のフォールバック
                                                         return $record->timingTag->timing_name ?? '不明なタイミング';
                                                     });
                                                 });
-
-                                            // カテゴリの表示順を定義 (例: Controllerから渡される displayCategories と合わせる)
-                                            // コントローラーから $displayCategories が渡されない場合は、ここにハードコードするか、
-                                            // $post->postMedicationRecords から動的に取得する必要があります。
-                                            // 今回は、post_dateから取得できるdisplayCategoriesを想定します。
-                                            // (もしdisplayCategoriesが別途必要なら、コントローラで取得してdaily_detailに渡す必要があります)
-                                            $displayCategories = \App\Models\Category::orderBy('order_column_name_if_exists')->get(); // 例: カテゴリの表示順をDBから取得
-                                            if ($displayCategories->isEmpty()) {
-                                                // カテゴリがDBにない場合のフォールバック（例：朝、昼、夕、寝る前、頓服、その他）
-                                                $displayCategories = collect([
-                                                    (object)['category_name' => '朝'],
-                                                    (object)['category_name' => '昼'],
-                                                    (object)['category_name' => '夕'],
-                                                    (object)['category_name' => '寝る前'],
-                                                    (object)['category_name' => '頓服'],
-                                                    (object)['category_name' => 'その他'],
-                                                ]);
-                                            }
                                         @endphp
 
                                         @if ($post->postMedicationRecords->isEmpty())
@@ -115,7 +119,6 @@
                                                             $textColorClass = "category-text-{$categoryName}";
                                                             $iconColorClass = "category-icon-{$categoryName}";
 
-                                                            // カテゴリごとのアイコン設定 (IMGタグ)
                                                             $categoryIcon = '';
                                                             $iconBaseClass = 'w-12 h-12 mr-2';
                                                             switch ($categoryName) {
@@ -126,7 +129,7 @@
                                                                     $categoryIcon = '<img src="' . asset('images/noon.png') . '" alt="昼" class="' . $iconBaseClass . '">';
                                                                     break;
                                                                 case '夕':
-                                                                    $categoryIcon = '<img src="' . asset('images/evening.png') . '" alt="夕" class="' . $iconBaseClass . '">'; // corrected typo
+                                                                    $categoryIcon = '<img src="' . asset('images/evening.png') . '" alt="夕" class="' . $iconBaseClass . '">';
                                                                     break;
                                                                 case '寝る前':
                                                                     $categoryIcon = '<img src="' . asset('images/night.png') . '" alt="寝る前" class="' . $iconBaseClass . '">';
