@@ -19,14 +19,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const lastDayOfMonth = new Date(year, month, 0);
     // 現在の月の総日数を取得します。
     const numDaysInMonth = lastDayOfMonth.getDate();
-
     // 現在の月の1日が週の何曜日（0:日曜, 1:月曜, ...）にあたるかを取得します。
     const firstDayOfWeek = firstDayOfMonth.getDay();
 
     // カレンダーの1日より前の空のセル（前月の日付部分）を作成し、カレンダーグリッドに追加します。
     for (let i = 0; i < firstDayOfWeek; i++) {
         const emptyCell = document.createElement('div');
-        emptyCell.className = 'calendar-cell p-2 h-20 bg-gray-50 rounded-md border border-gray-100 flex items-center justify-center text-gray-400';
+        emptyCell.className = 'calendar-cell p-2 h-24 bg-gray-50 rounded-md border border-gray-100 flex items-center justify-center text-gray-400';
         calendarGrid.appendChild(emptyCell);
     }
 
@@ -39,25 +38,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 各日付の表示セルとなるdiv要素を作成します。
         const dayCell = document.createElement('div');
-        // 日付セルのCSSクラスを設定します。
+        // 日付セルのCSSクラスを設定します。デフォルトの背景色とボーダー色もここに含めます。
         dayCell.className = 'calendar-cell flex flex-col items-center justify-center p-2 h-20 bg-white rounded-md shadow-sm border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors duration-200';
 
         // もし現在の日付が今日の日付と一致する場合、特別なCSSクラスを追加して強調表示します。
         const today = new Date();
-    if (year === today.getFullYear() && month === (today.getMonth() + 1) && day === today.getDate()) {
-        // ★★★ 既存の背景色とボーダー色、ホバー色を削除する ★★★
-        dayCell.classList.remove('bg-white', 'border-gray-200', 'hover:bg-gray-50'); 
-        // ★★★ 新しいクラスを追加する ★★★
-        dayCell.classList.add('bg-blue-200', 'border-blue-500', 'font-bold', 'hover:bg-blue-300'); 
-    }
-
+        if (year === today.getFullYear() && month === (today.getMonth() + 1) && day === today.getDate()) {
+            // 既存の背景色とボーダー色、ホバー色を削除してから、新しい色を追加します
+            dayCell.classList.remove('bg-white', 'border-gray-200', 'hover:bg-gray-50'); 
+            dayCell.classList.add('bg-blue-200', 'border-blue-500', 'font-bold', 'hover:bg-blue-300'); 
+        }
 
         // 日付セル全体をクリック可能にするための<a>要素を作成します。
         const cellLink = document.createElement('a');
         // <a>要素のリンク先を、上で生成した日ごとの記録詳細URLに設定します。
         cellLink.href = postDetailUrl;
         // <a>要素のCSSクラスを設定します。
-        cellLink.className = 'w-full h-full flex flex-col items-center justify-center no-underline text-current';
+        cellLink.className = 'w-full flex flex-col items-center justify-center flex-grow no-underline text-current';
 
         // 日付の数字を表示するdiv要素を作成します。
         const dayNumber = document.createElement('div');
@@ -115,8 +112,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 薬の名前やステータスを表示するdiv要素を作成します。
         const statusTextDisplay = document.createElement('div');
-        // 薬の名前表示のCSSクラスを設定します。
-        statusTextDisplay.className = 'text-xs text-gray-600 mt-1 truncate w-full px-1';
+        // 薬の名前表示のCSSクラスを設定します。mt-1 を削除します
+        statusTextDisplay.className = 'text-xs text-gray-600 truncate w-full px-1'; // ★修正点：mt-1 を削除
         // セルに表示するテキストを設定します。
         statusTextDisplay.textContent = displayStatusText;
         // もし表示テキストがあれば、それを<a>要素に追加します。
