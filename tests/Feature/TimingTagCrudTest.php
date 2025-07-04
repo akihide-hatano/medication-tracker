@@ -169,4 +169,30 @@ class TimingTagCrudTest extends TestCase
             'timing_name' => '更新対象のタグ', // 更新されていない元の名前
         ]);
     }
+
+    public function test_timing_tag_delete():void{
+        //userのlogin状態にする
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        //削除するタイミングタグを作成する
+        $timingTag = TimingTag::factory()->create([
+            'timing_name' => '削除対象のタグ'
+        ]);
+
+        // データベースにタグが実際に存在することを確認
+        $this->assertDatabaseHas('timing_tags', ['timing_tag_id' => $timingTag->timing_tag_id]);
+        $this->assertDatabaseCount('timing_tags', 1);
+
+        //deleteリクエストを送信してタグを削除
+        $response = $this -> delete(route('timing_tags.destroy',$timingTag->timing_tag_id));
+
+        //タグが正常に削除して、一覧pegeにリダイレクトして成功メッセージを表示
+        $response->assertRedirect(route('timing_tags.index'));
+        $response->assertSessionHas('success','服用タイミングが正常に削除されました！');
+
+        //データベースからタグが削除されていることを確認
+        $this->assertDatabaseMissing('timing_tags', ['timing_tag_id' => $timingTag->timing_tag_id]);
+        $this->assertDatabaseCount('timing_tags', 0); // データベースにタグが1件もないことを確認
+    }
 }
