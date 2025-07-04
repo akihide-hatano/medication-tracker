@@ -72,7 +72,7 @@ class TimingTagCrudTest extends TestCase
         $timingTag3 = TimingTag::factory()->create(['timing_name' => '就寝前']);
 
         //タイミングタグの一覧pageにGETリクエストを送信
-        $response = $this->get(route('timig_tags.index'));
+        $response = $this->get(route('timing_tags.index'));
 
         // ステータスコードが200 OKであることを確認
         $response->assertStatus(200);
@@ -81,5 +81,27 @@ class TimingTagCrudTest extends TestCase
         $response->assertSee($timingTag1->timing_name);
         $response->assertSee($timingTag2->timing_name);
         $response->assertSee($timingTag3->timing_name);
+    }
+
+    public function test_authenticated_user_can_view_timing_tag_details(): void
+    {
+        // 1. ユーザーを作成し、ログイン状態にする
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // 2. 表示したい特定のタイミングタグデータを作成する
+        $timingTag = TimingTag::factory()->create([
+            'timing_name' => '詳細テストタイミングタグ',
+        ]);
+
+        // 3. 詳細ページにGETリクエストを送信
+        // TimingTagモデルの主キーが 'timing_tag_id' なので、それを使用します。
+        $response = $this->get(route('timing_tags.show', $timingTag->timing_tag_id));
+
+        // 4. HTTPステータスコードが200 OKであることを確認
+        $response->assertStatus(200);
+
+        // 5. ページコンテンツにタグの名前が表示されていることを確認
+        $response->assertSee($timingTag->timing_name);
     }
 }
