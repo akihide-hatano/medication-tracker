@@ -39,4 +39,24 @@ class TimingTagCrudTest extends TestCase
         $this->assertDatabaseHas('timing_tags', $timigTagData);
         $this->assertDatabaseCount('timing_tags', 1); // データベースに薬が1件追加されたことを確認
     }
+
+    //タイミングタグの作成時に無効なデータでバリデーションエラーが発生する
+    public function test_timing_tag_store_timingtag():void{
+    //userの作成
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    //errorになるPostリクエストの作成
+    $invalidData = [
+    'timing_name' => '',
+    ];
+
+    $response = $this->post(route('timing_tags.store'), $invalidData);
+    //リダイレクトされるかどうかを確認
+    $response->assertStatus(302);
+    // 各エラーメッセージが存在することを確認
+    $response->assertSessionHasErrors(['timing_name']);
+    // データベースに薬が作成されていないことを確認
+    $this->assertDatabaseCount('timing_tags', 0);
+    }
 }
