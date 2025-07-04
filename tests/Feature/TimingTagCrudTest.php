@@ -59,4 +59,27 @@ class TimingTagCrudTest extends TestCase
     // データベースに薬が作成されていないことを確認
     $this->assertDatabaseCount('timing_tags', 0);
     }
+
+    public function test_user_view_timing_tag_index():void{
+
+        //userのログインを作成
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        //テスト用のタイミングタグを複数作成する
+        $timingTag1 = TimingTag::factory()->create(['timing_name' => '朝食前']);
+        $timingTag2 = TimingTag::factory()->create(['timing_name' => '夕食後']);
+        $timingTag3 = TimingTag::factory()->create(['timing_name' => '就寝前']);
+
+        //タイミングタグの一覧pageにGETリクエストを送信
+        $response = $this->get(route('timig_tags.index'));
+
+        // ステータスコードが200 OKであることを確認
+        $response->assertStatus(200);
+
+        // 作成した全てのタグの名前がページに表示されていることを確認
+        $response->assertSee($timingTag1->timing_name);
+        $response->assertSee($timingTag2->timing_name);
+        $response->assertSee($timingTag3->timing_name);
+    }
 }
