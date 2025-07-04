@@ -50,6 +50,28 @@ class MedicationCrudTest extends TestCase
         $this->assertDatabaseCount('medications', 1); // データベースに薬が1件追加されたことを確認
     }
 
+    public function test_medication_store_validation_error():void{
+    //userの作成
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    //errorになるPostリクエストの作成
+    $invalidData = [
+    'medication_name' => '', // 必須項目を空にする
+    'dosage' => str_repeat('X', 256), // string|max:255 を超える
+    'notes' => str_repeat('Y', 1001), // text|max:1000 を超える
+    'effect' => str_repeat('Z', 1001), // text|max:1000 を超える
+    'side_effects' => str_repeat('W', 1001), // text|max:1000 を超える
+        ];
+        $response = $this->post(route('medications.store'), $invalidData);
+    //リダイレクトされるかどうかを確認
+    $response->assertStatus(302);
+    // 各エラーメッセージが存在することを確認
+    $response->assertSessionHasErrors(['medication_name', 'dosage', 'notes', 'effect', 'side_effects']);
+    // データベースに薬が作成されていないことを確認
+    $this->assertDatabaseCount('medications', 0); // データベースに薬が1件も追加されていないこと
+    }
+
     public function test_auth_user_view_medication_index():void
     {
         //ユーザーのログイン

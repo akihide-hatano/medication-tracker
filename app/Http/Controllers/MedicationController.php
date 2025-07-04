@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Medication;
 use Illuminate\Http\Request;
+use App\Http\Requests\MedicationStoreRequest;
+use App\Http\Requests\MedicationUpdateRequest;
 use Illuminate\Support\Facades\Log; // Log も引き続き利用可能
 
 class MedicationController extends Controller
@@ -26,15 +28,9 @@ class MedicationController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      */
-    public function store(Request $request)
+    public function store(MedicationStoreRequest $request)
     {
-        $validatedData = $request->validate([
-            'medication_name' => 'required|string|max:255',
-            'dosage' => 'nullable|string|max:255',
-            'notes' => 'nullable|string',
-            'effect' => 'nullable|string',
-            'side_effects' => 'nullable|string',
-        ]);
+        $validatedData = $request->validated(); // 検証済みのデータを取得
 
         $medication = Medication::create($validatedData);
         return redirect()->route('medications.index')->with('success', '薬が正常に追加されました！');
