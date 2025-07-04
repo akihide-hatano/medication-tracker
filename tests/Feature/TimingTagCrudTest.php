@@ -105,7 +105,7 @@ class TimingTagCrudTest extends TestCase
         $response->assertSee($timingTag->timing_name);
     }
 
- public function test_user_update_timing_tag():void{
+    public function test_user_update_timing_tag():void{
         //ユーザーを作成し、ログイン状態にする
         // ★注意: このテストでは管理者にログインさせる必要があります。UserFactoryにadmin()ステートを追加している前提です。
         // もしadmin()ステートがない場合、User::factory()->create(['is_admin' => true]); のように直接指定してください。
@@ -128,7 +128,6 @@ class TimingTagCrudTest extends TestCase
         $response = $this->get(route('timing_tags.edit', $timingTag->timing_tag_id));
         $response->assertStatus(200);
         $response->assertSee('更新前のタグ名'); // 編集フォームに既存の名前が表示されているか
-
         // 有効な更新データでPUTリクエストを送信する
         $updatedData = [
             'timing_name' => '更新後のタグ名',
@@ -142,5 +141,32 @@ class TimingTagCrudTest extends TestCase
         //データベースのタグが更新されていることを確認
         $this->assertDatabaseHas('timing_tags', array_merge(['timing_tag_id' => $timingTag->timing_tag_id], $updatedData));
 
+    }
+
+    public function test_timing_tag_update_validation_errors():void{
+        //userを作成し、ログインする
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        //タイミングタグを作成する
+        $timingTag = TimingTag::factory()->create([
+            'timing_name'=>'更新対象のタグ',
+        ]);
+
+        //databaseにタグが存在することを確認する
+        $this->assertDatabaseHas('timing_tags',['timing_tag_id' => $timingTag->timing_tag_id]);
+
+        //更新データでPUTリクエストを送信します。
+        $updatedData = [
+            'timing_name' => '',
+        ];
+        $response = $this->put(route('timing_tags.update', $timingTag->timing_tag_id), $updatedData);
+        $response->assertStatus(302);
+
+        // 6. データベースのタグが更新されていないことを確認
+        $this->assertDatabaseHas('timing_tags', [
+            'timing_tag_id' => $timingTag->timing_tag_id,
+            'timing_name' => '更新対象のタグ', // 更新されていない元の名前
+        ]);
     }
 }
