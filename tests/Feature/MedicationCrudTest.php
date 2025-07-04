@@ -123,5 +123,50 @@ class MedicationCrudTest extends TestCase
         $response->assertSee($medication->side_effects);
     }
 
+    public function test_authenticated_user_can_update_medication(): void
+    {
+        // 1. ユーザーを作成し、ログイン状態にする
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // 2. 更新対象となる薬を作成する（グローバルな薬）
+        $medication = Medication::factory()->create([
+            'medication_name' => '更新前の薬',
+            'dosage' => '1錠',
+            'notes' => '古い説明',
+            'effect' => '古い効果',
+            'side_effects' => '古い副作用',
+        ]);
+
+        // データベースに薬が実際に存在することを確認
+        $this->assertDatabaseHas('medications', [
+            'medication_id' => $medication->medication_id,
+            'medication_name' => '更新前の薬',
+        ]);
+
+        // 3. 薬の編集ページにアクセスし、ステータスコード200（成功）を期待する
+        // ユーザー（管理者）なので編集ページにアクセスできるはず
+        $response = $this->get(route('medications.edit', $medication->medication_id));
+        $response->assertStatus(200);
+        $response->assertSee('更新前の薬'); // 編集フォームに既存の名前が表示されているか
+
+        // 4. 有効な更新データでPUTリクエストを送信する
+        $updatedData = [
+            'medication_name' => '更新後の薬',
+            'dosage' => '2錠',
+            'notes' => '新しい説明です。',
+            'effect' => '新しい効果',
+            'side_effects' => '新しい副作用',
+        ];
+        $response = $this->put(route('medications.update', $medication->medication_id), $updatedData);
+
+        // 5. 薬が正常に更新され、詳細ページにリダイレクトされたか、成功メッセージが表示されたかなどを確認
+        $response->assertRedirect(route('medications.show', $medication->medication_id)); // リダイレクト先を確認
+        $response->assertSessionHas('success', '薬の情報が正常に更新されました！'); // セッションに成功メッセージがあるか確認
+
+        // 6. データベースの薬が更新されていることを確認
+        $this->assertDatabaseHas('medications', array_merge(['medication_id' => $medication->medication_id], $updatedData));
+    }
+
 
 }
