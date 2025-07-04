@@ -101,6 +101,26 @@ class MedicationCrudTest extends TestCase
         //ユーザーを作成してLogin状態であることを立証
         $user = User::factory()->create();
         $this->actingAs($user);
+
+        //表示したい内服薬のdataを作成
+        $medication = Medication::factory()->create([
+                'medication_name' => '詳細テスト薬',
+                'dosage' => '20ml',
+                'notes' => 'この薬の詳細を確認するためのテストノートです。',
+                'effect' => '詳細確認用効果',
+                'side_effects' => '詳細確認用副作用',
+        ]);
+        //routeの設定
+        $response = $this->get(route('medications.show', $medication->medication_id));
+        //HTTPステータスコードの設定
+        $response->assertStatus(200);
+
+        //コンテンツの確認
+        $response->assertSee($medication->medication_name);
+        $response->assertSee($medication->dosage);
+        $response->assertSee($medication->notes);
+        $response->assertSee($medication->effect);
+        $response->assertSee($medication->side_effects);
     }
 
 
