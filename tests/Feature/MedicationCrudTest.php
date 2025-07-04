@@ -8,6 +8,7 @@ use Tests\TestCase;
 use App\Models\User;
 use App\Models\Medication;
 use Database\Factories\MedicationFactory; // この行は正しいです
+use Faker\Provider\Medical;
 
 class MedicationCrudTest extends TestCase
 {
@@ -190,5 +191,40 @@ class MedicationCrudTest extends TestCase
         $this->assertDatabaseHas('medications', array_merge(['medication_id' => $medication->medication_id], $updatedData));
     }
 
+    //内服薬の削除ができるか
+    public function test_delete_medication():void{
 
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+    //削除される内服薬を作成
+    $medication = Medication::factory()->create([
+            'medication_name' => '削除する薬',
+            'dosage' => '削除',
+            'notes' => '削除します',
+            'effect' => '作用は削除',
+            'side_effects' => '副作用を削除します',
+    ]);
+
+    //データベースに内服薬が存在しているのか確認
+    $this->assertDatabaseHas('medications',[
+                    'medication_name' => '削除する薬',
+            'dosage' => '削除',
+            'notes' => '削除します',
+            'effect' => '作用は削除',
+            'side_effects' => '副作用を削除します',
+    ]);
+    $this->assertDatabaseCount('medications',1);
+
+    //DELETE リクエストを送信して薬を削除する
+    $response = $this->delete(route('medications.destroy', $medication->medication_id));
+
+    //薬が正常に削除され、一覧ページにリダイレクトされたか、成功メッセージが表示されたかなどを確認
+    $response->assertRedirect(route('medications.index'));
+    $response->assertSessionHas('success', '薬が正常に削除されました！');
+
+    //データベースから薬が削除されていることを確認
+    $this->assertDatabaseMissing('medications', ['medication_id' => $medication->medication_id]);
+    $this->assertDatabaseCount('medications', 0); // データベースに薬が1件もないことを確認
+    }
 }
