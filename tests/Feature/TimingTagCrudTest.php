@@ -104,4 +104,43 @@ class TimingTagCrudTest extends TestCase
         // 5. ページコンテンツにタグの名前が表示されていることを確認
         $response->assertSee($timingTag->timing_name);
     }
+
+ public function test_user_update_timing_tag():void{
+        //ユーザーを作成し、ログイン状態にする
+        // ★注意: このテストでは管理者にログインさせる必要があります。UserFactoryにadmin()ステートを追加している前提です。
+        // もしadmin()ステートがない場合、User::factory()->create(['is_admin' => true]); のように直接指定してください。
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        //更新対象となるタイミングタグを作成する
+        $timingTag = TimingTag::factory()->create([
+            'timing_name' => '更新前のタグ名',
+        ]);
+
+        //データベースにタグが実際に存在することを確認
+        // ★ここを修正します！ 'timing_tags' を追加★
+        $this->assertDatabaseHas('timing_tags', [
+            'timing_tag_id'=>$timingTag->timing_tag_id,
+            'timing_name'=>'更新前のタグ名'
+        ]);
+
+        //タイミングタグの編集pageにアクセスし、ステータスコード200を期待する
+        $response = $this->get(route('timing_tags.edit', $timingTag->timing_tag_id));
+        $response->assertStatus(200);
+        $response->assertSee('更新前のタグ名'); // 編集フォームに既存の名前が表示されているか
+
+        // 有効な更新データでPUTリクエストを送信する
+        $updatedData = [
+            'timing_name' => '更新後のタグ名',
+        ];
+        $response = $this->put(route('timing_tags.update', $timingTag->timing_tag_id), $updatedData);
+
+        //タグが正常に更新され、詳細ページにリダイレクトされたか、成功メッセージが表示されたかなどを確認
+        $response->assertRedirect(route('timing_tags.show', $timingTag->timing_tag_id));
+        $response->assertSessionHas('success', '服用タイミングが正常に更新されました！'); // コントローラーのメッセージに合わせる
+
+        //データベースのタグが更新されていることを確認
+        $this->assertDatabaseHas('timing_tags', array_merge(['timing_tag_id' => $timingTag->timing_tag_id], $updatedData));
+
+    }
 }
