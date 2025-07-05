@@ -93,11 +93,11 @@ class PostControllerTest extends TestCase
      */
     public function test_authenticated_user_can_access_create_post_form(): void
     {
-        // 1. 認証済みユーザーを作成し、ログイン状態にする
+         // 1. 認証済みユーザーを作成し、ログイン状態にする
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        // 2. フォームに表示される必要のあるデータを作成しておく
+        // 2. フォームに表示される必要のあるデータを作成しておく（これらは直接assertSeeしない）
         $medication = Medication::factory()->create(['medication_name' => 'テスト薬A']);
         $timingTag = TimingTag::factory()->create(['timing_name' => '朝食後', 'category_name' => '朝']);
 
@@ -116,9 +116,13 @@ class PostControllerTest extends TestCase
         $response->assertViewHas('displayCategories');
         $response->assertViewHas('nestedCategorizedMedicationRecords');
 
-        // 7. フォーム上に薬やタイミングタグのデータが表示されることを確認（オプション）
-        $response->assertSee($medication->medication_name);
-        $response->assertSee($timingTag->timing_name);
-        $response->assertSee($timingTag->category_name);
+        // 7. フォーム上に表示されるべき静的なテキストを確認
+        // 薬の記録がない場合のメッセージが表示されることを期待
+        // ★ここを修正します★
+        $response->assertSee('薬の記録がありません。下のボタンで追加してください。');
+        // 薬やタイミングタグの名前は、JavaScriptで動的に追加されるため、このテストではassertSeeしない
+        // $response->assertSee($medication->medication_name);
+        // $response->assertSee($timingTag->timing_name);
+        // $response->assertSee($timingTag->category_name);
     }
 }
