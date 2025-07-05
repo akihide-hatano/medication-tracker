@@ -106,7 +106,8 @@ class PostControllerTest extends TestCase
         $response->assertViewIs('posts.show');
         // 6. 投稿の詳細内容が表示されていることを確認
         $response->assertSee($postCompleted->content);
-        $response->assertSee($postCompleted->post_date);
+        $response->assertSee($postCompleted->post_date->format('Y年m月d日')); // 例: '2025-07-01'
+        // $response->assertSee($postCompleted->post_date);
         // all_meds_taken が true の場合に関連するテキストを確認
         // 例: "全ての薬を服用済み" のようなテキストが表示されることを想定
         $response->assertSee('全ての薬を服用済み'); // Bladeに表示されるテキストに合わせる
@@ -124,10 +125,12 @@ class PostControllerTest extends TestCase
         $response->assertStatus(200);
         $response->assertViewIs('posts.show');
         $response->assertSee($postNotCompleted->content);
-        $response->assertSee($postNotCompleted->post_date);
-        // all_meds_taken が false の場合に関連するテキストを確認
-        $response->assertDontSee('全ての薬を服用済み');
-        $response->assertSee('服用しなかった理由'); // 理由が表示されることを確認
+        // $response->assertSee($postNotCompleted->post_date);
+        $response->assertSee($postNotCompleted->post_date->format('Y年m月d日')); // 例: '2025-07-01'
+       // all_meds_taken が false の場合に関連するテキストを確認
+        $response->assertDontSee('全ての薬を服用済みです。'); // Bladeに合わせて「です。」も追加
+        $response->assertSee('全ての薬は服用されていません。'); // Bladeの正確なテキストに合わせる
+        $response->assertSee('理由:'); // 「理由: 」というラベルがあるため
         $response->assertSee($postNotCompleted->reason_not_taken);
     }
 
