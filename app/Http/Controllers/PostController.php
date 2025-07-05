@@ -325,8 +325,6 @@ public function edit(Post $post)
             }
         }
 
-        // dd($nestedCategorizedMedicationRecords); // ここで再度ddして、中身を確認しても良い
-
         return view('posts.edit', compact(
             'post',
             'medications',
@@ -348,6 +346,9 @@ public function edit(Post $post)
      */
     public function update(Request $request, Post $post)
     {
+
+        dump($request->all());
+
         $validatedData = $request->validate([
             'post_date' => ['required', 'date'],
             'content' => ['nullable', 'string', 'max:1000'],
@@ -360,6 +361,9 @@ public function edit(Post $post)
             'medications.*.taken_dosage' => 'nullable|string|max:255',
         ]);
 
+        // 2. バリデーション後のデータを確認
+        dump($validatedData);
+
         DB::beginTransaction();
         try {
             $post->update([
@@ -368,6 +372,8 @@ public function edit(Post $post)
                 'reason_not_taken' => $validatedData['reason_not_taken'] ?? null,
                 'content' => $validatedData['content'] ?? null,
             ]);
+            // 3. Postモデルが更新された直後のデータを確認
+            dump($post->toArray());
 
             $post->postMedicationRecords()->delete();
 

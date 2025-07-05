@@ -16,12 +16,15 @@ class Post extends Model
     protected $fillable = [
         'user_id',
         'post_date',
-        'notes',
+        'content',          // ★ 'notes' を 'content' に変更 (もしDBカラムがcontentなら)
+        'all_meds_taken',   // ★ 追加
+        'reason_not_taken', // ★ 追加
     ];
 
     // 日付カラムはCarbonインスタンスとして扱われるようにキャスト
     protected $casts = [
         'post_date' => 'date',
+        'all_meds_taken' => 'boolean',
     ];
 
     // リレーションシップの定義
