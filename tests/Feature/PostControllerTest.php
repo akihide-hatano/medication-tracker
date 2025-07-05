@@ -159,4 +159,73 @@ class PostControllerTest extends TestCase
         // 薬の記録がない場合のメッセージが表示されることを期待
         $response->assertSee('薬の記録がありません。下のボタンで追加してください。');
     }
+
+    public function test_auth_user_update_post():void{
+        //ユーザーを作成し、ログイン状態にする
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        //更新対象となる既存投稿を作成する
+        $post = Post::factory()->forUser($user)->create([
+            'post_date' => '2025-07-01',
+            'content' => '元の記録',
+            'all_meds_taken' => true,
+            'reason_not_taken' => null,
+        ]);
+
+        //更新に必要な関連データを作成する
+        $medication1 = Medication::factory()->create(['medication_name' => '更新薬A']);
+        $timingTag1 = TimingTag::factory()->create(['timing_name' => '朝食後']);
+
+        // 4. 更新データを作成する
+        $updatedData = [
+            'post_date' => '2025-07-05', // 日付を変更
+            'content' => '更新された記録です。今日の体調は素晴らしい！', // 内容を変更
+            'all_meds_taken' => false, // 服薬状況を変更
+            'reason_not_taken' => '一部薬を飲み忘れました。', // 理由を追加
+            'medications' => [
+                // 既存の記録を更新する場合 (IDを渡す)
+                // 今回はシンプルに新しい記録を追加する形式でテスト
+                [
+                    'medication_id' => $medication1->medication_id,
+                    'timing_tag_id' => $timingTag1->timing_tag_id,
+                    'is_completed' => false,
+                    'taken_dosage' => '1カプセル',
+                    'reason_not_taken' => '眠かったから', // 個別の記録にも理由がある場合
+                ],
+            ],
+        ];
+
+       // 5. PUT/PATCHリクエストを送信して投稿を更新
+        $response = $this->put(route('posts.update', ['post' => $post->post_id]), $updatedData);
+
+        // 6. 更新が正常に完了し、詳細ページにリダイレクトされたか、成功メッセージが表示されたかなどを確認
+        // 通常は更新後に詳細ページか一覧ページにリダイレクトされるため、ルートに合わせて調整してください
+        $response->assertRedirect(route('posts.show', ['post' => $post->post_id]));
+        $response->assertSessionHas('success', '投稿が正常に更新されました！');
+
+        // 7. データベースに投稿が実際に更新されているか確認
+        //databaseに投稿が実際に更新されているか確認
+        $this->assertDatabaseHas('posts',[
+            'post_id'=>$post->post_id,
+            'user_id' => $user->id,
+            'post_date' => $updatedData['post_date'],
+            'content' => $updatedData['content'],
+            'all_meds_taken' => $updatedData['all_meds_taken'],
+            'reason_not_taken' => $updatedData['reason_not_taken'],
+        ]);
+
+        // 8. データベースのPostMedicationRecordが更新されているか確認
+        // 今回は、既存のPostMedicationRecordは削除され、新しいものが追加される前提でテスト
+        // (Controllerのupdateロジックによって変わる)
+        $this->assertDatabaseCount('post_medications_records', 1); // 新しく追加された1件のみが存在する前提
+        $this->assertDatabaseHas('post_medications_records', [
+            'post_id' => $post->post_id,
+            'medication_id' => $medication1->medication_id,
+            'timing_tag_id' => $timingTag1->timing_tag_id,
+            'is_completed' => false,
+            'taken_dosage' => '1カプセル',
+            'reason_not_taken' => '眠かったから',
+        ]);
+    }
 }
