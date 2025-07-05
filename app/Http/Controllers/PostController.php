@@ -347,8 +347,6 @@ public function edit(Post $post)
     public function update(Request $request, Post $post)
     {
 
-        dump($request->all());
-
         $validatedData = $request->validate([
             'post_date' => ['required', 'date'],
             'content' => ['nullable', 'string', 'max:1000'],
@@ -359,10 +357,9 @@ public function edit(Post $post)
             'medications.*.timing_tag_id' => ['required', 'exists:timing_tags,timing_tag_id'],
             'medications.*.is_completed' => ['required', 'boolean'],
             'medications.*.taken_dosage' => 'nullable|string|max:255',
+            'medications.*.reason_not_taken' => 'nullable|string|max:500',
         ]);
 
-        // 2. バリデーション後のデータを確認
-        dump($validatedData);
 
         DB::beginTransaction();
         try {
@@ -372,8 +369,7 @@ public function edit(Post $post)
                 'reason_not_taken' => $validatedData['reason_not_taken'] ?? null,
                 'content' => $validatedData['content'] ?? null,
             ]);
-            // 3. Postモデルが更新された直後のデータを確認
-            dump($post->toArray());
+
 
             $post->postMedicationRecords()->delete();
 
@@ -384,6 +380,7 @@ public function edit(Post $post)
                     'is_completed' => $medicationRecord['is_completed'],
                     'taken_dosage' => $medicationRecord['taken_dosage'] ?? null,
                     'taken_at' => now(),
+                    'reason_not_taken' => $medicationRecord['reason_not_taken'] ?? null, // ★この行を追加！
                 ]);
             }
 
