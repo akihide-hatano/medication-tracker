@@ -1,5 +1,3 @@
-// app/Http/Requests/TimingTagUpdateRequest.php
-
 <?php
 
 namespace App\Http\Requests;

@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TimingTag; // TimingTag モデルをインポート
-use Illuminate\Http\Request; // Request クラスをインポート
-use Illuminate\Support\Facades\Log; // デバッグ用にLogをインポート（任意）
+use App\Models\TimingTag;
+use Illuminate\Http\Request;
+use App\Http\Requests\TimingTagStoreRequest;
+use App\Http\Requests\TimingTagUpdateRequest;
 
 class TimingTagController extends Controller
 {
@@ -38,12 +39,10 @@ class TimingTagController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function store(Request $request)
+    public function store( TimingTagStoreRequest $request)
     {
         // 入力値のバリデーション
-        $validatedData = $request->validate([
-            'timing_name' => 'required|string|max:255|unique:timing_tags,timing_name', // timing_nameは必須かつユニーク
-        ]);
+        $validatedData = $request->validated();
 
         // データベースに服用タイミングを作成
         $timingTag = TimingTag::create($validatedData);
@@ -84,13 +83,11 @@ class TimingTagController extends Controller
      * @param  \App\Models\TimingTag  $timingTag
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(Request $request, TimingTag $timingTag)
+    public function update(TimingTagUpdateRequest $request, TimingTag $timingTag)
     {
         // 入力値のバリデーション
         // 更新時もtiming_nameはユニークにするが、自分自身のレコードは除く
-        $validatedData = $request->validate([
-            'timing_name' => 'required|string|max:255|unique:timing_tags,timing_name,' . $timingTag->timing_tag_id . ',timing_tag_id',
-        ]);
+        $validatedData = $request->validated();
 
         // 服用タイミングの情報を更新
         $timingTag->update($validatedData);
