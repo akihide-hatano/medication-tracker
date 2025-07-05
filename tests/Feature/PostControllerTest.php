@@ -209,7 +209,7 @@ class PostControllerTest extends TestCase
         $this->assertDatabaseHas('posts',[
             'post_id'=>$post->post_id,
             'user_id' => $user->id,
-            'post_date' => $updatedData['post_date'],
+            'post_date' => Carbon::parse($updatedData['post_date'])->startOfDay()->toDateTimeString(),
             'content' => $updatedData['content'],
             'all_meds_taken' => $updatedData['all_meds_taken'],
             'reason_not_taken' => $updatedData['reason_not_taken'],
