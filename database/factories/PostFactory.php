@@ -15,7 +15,7 @@ class PostFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'post_date' => $this->faker->date(),
+            'post_date' => $this->faker->date('Y-m-d'),
             'content' => $this->faker->sentence(),
             'all_meds_taken' => $this->faker->boolean(),
             'reason_not_taken' => $this->faker->boolean(50) ? $this->faker->sentence() : null,

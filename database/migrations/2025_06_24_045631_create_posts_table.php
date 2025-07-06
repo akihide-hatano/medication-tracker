@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('posts', function (Blueprint $table) {
             $table->id('post_id');
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // user_id（外部キー）
-            $table->date('post_date')->unique(); // 投稿日付（日付型、ユニーク）
+            $table->date('post_date');
             $table->boolean('all_meds_taken')->default(false); // 全ての薬を飲めたか（真偽値、デフォルトfalse）
             $table->text('reason_not_taken')->nullable(); // 飲めなかった理由（テキスト、NULL許容）
             $table->text('content')->nullable(); // 投稿内容（テキスト、NULL許容）

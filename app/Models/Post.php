@@ -12,6 +12,10 @@ class Post extends Model
     // 主キーが 'post_id' であることを明示
     protected $primaryKey = 'post_id';
 
+    // ★この行を追加してください★
+    // 主キーが自動増分されることを明示的に指定
+    public $incrementing = true;
+
     // マスアサインメント可能なカラム
     protected $fillable = [
         'user_id',

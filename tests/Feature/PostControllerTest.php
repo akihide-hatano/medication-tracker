@@ -322,6 +322,146 @@ class PostControllerTest extends TestCase
         $response->assertRedirect(route('posts.index')); // または assertRedirect('/home') など適切なURLに修正してください
 
         // セッションに成功メッセージが保存されたことを確認 (任意)
-        $response->assertSessionHas('message', '投稿が削除されました。'); // メッセージ内容もアプリケーションに合わせて修正してください
+        $response->assertSessionHas('success', '投稿が正常に削除されました！'); // メッセージ内容もアプリケーションに合わせて修正してください
+    }
+
+ public function test_auth_user_can_view_current_month_calendar(): void
+    {
+        // 1. 認証済みユーザーを作成し、ログイン状態にする
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // 2. 現在の月の投稿をいくつか作成する (服用済みと未服用)
+        $currentYear = Carbon::now()->year;
+        $currentMonth = Carbon::now()->month;
+
+        // 服用済みの投稿
+        $postCompleted = Post::factory()->forUser($user)->create([
+            'post_date' => Carbon::create($currentYear, $currentMonth, 5)->toDateString(),
+            'all_meds_taken' => true,
+            'content' => '全て服用した日の記録',
+        ]);
+        $medication1 = Medication::factory()->create(['medication_name' => '薬A']);
+        $timingTag1 = TimingTag::factory()->create(['timing_name' => '朝食後', 'category_name' => '朝']);
+        PostMedicationRecord::factory()->create([
+            'post_id' => $postCompleted->post_id,
+            'medication_id' => $medication1->medication_id,
+            'timing_tag_id' => $timingTag1->timing_tag_id,
+            'is_completed' => true,
+            'taken_dosage' => '1錠',
+        ]);
+
+        // 未服用の投稿
+        $postNotCompleted = Post::factory()->forUser($user)->create([
+            'post_date' => Carbon::create($currentYear, $currentMonth, 10)->toDateString(),
+            'all_meds_taken' => false,
+            'reason_not_taken' => '体調不良のため',
+            'content' => '服用しなかった日の記録',
+        ]);
+
+        // 他のユーザーの投稿 (表示されないことを確認するため)
+        $otherUser = User::factory()->create();
+        Post::factory()->forUser($otherUser)->create([
+            'post_date' => Carbon::create($currentYear, $currentMonth, 15)->toDateString(),
+            'all_meds_taken' => true,
+            'content' => '他のユーザーの記録',
+        ]);
+
+        // 3. カレンダーページにGETリクエストを送信 (パラメータなしで現在の月をテスト)
+        $response = $this->get(route('posts.calendar'));
+
+        // 4. ステータスコードが200 OKであることを確認
+        $response->assertStatus(200);
+
+        // 5. ビューが正しいビューを使用していることを確認
+        $response->assertViewIs('posts.calendar');
+
+        // 6. ビューに渡されたデータが期待通りであることを確認
+        $response->assertViewHas('date', function ($date) use ($currentYear, $currentMonth) {
+            return $date->year === $currentYear && $date->month === $currentMonth;
+        });
+
+        $response->assertViewHas('medicationStatusByDay', function ($statusByDay) use ($postCompleted, $postNotCompleted, $medication1, $timingTag1) {
+            // 服用済みの日のデータ検証
+            $this->assertArrayHasKey($postCompleted->post_date->day, $statusByDay);
+            $this->assertEquals('completed', $statusByDay[$postCompleted->post_date->day]['status']);
+            $this->assertArrayHasKey('medications', $statusByDay[$postCompleted->post_date->day]);
+            $this->assertStringContainsString($medication1->medication_name, $statusByDay[$postCompleted->post_date->day]['medications'][0]);
+            $this->assertStringContainsString($timingTag1->timing_name, $statusByDay[$postCompleted->post_date->day]['medications'][0]);
+            $this->assertStringContainsString('1錠', $statusByDay[$postCompleted->post_date->day]['medications'][0]);
+
+            // 未服用の日のデータ検証
+            $this->assertArrayHasKey($postNotCompleted->post_date->day, $statusByDay);
+            $this->assertEquals('not_completed', $statusByDay[$postNotCompleted->post_date->day]['status']);
+            $this->assertArrayHasKey('reason', $statusByDay[$postNotCompleted->post_date->day]);
+            $this->assertEquals($postNotCompleted->reason_not_taken, $statusByDay[$postNotCompleted->post_date->day]['reason']);
+
+            // 他のユーザーの投稿が含まれていないことを確認 (PostControllerのwhere('user_id', Auth::id())により)
+            return true; // アサートが全て成功すればtrueを返す
+        });
+    }
+
+    /**
+     * @test
+     * 認証済みユーザーが特定の月のカレンダーを正常に閲覧できることをテストする
+     */
+    public function test_auth_user_can_view_specific_month_calendar(): void
+    {
+        // 1. 認証済みユーザーを作成し、ログイン状態にする
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // 2. 過去の特定の月の投稿を作成する
+        $targetYear = 2024;
+        $targetMonth = 1; // 1月
+
+        $postInTargetMonth = Post::factory()->forUser($user)->create([
+            'post_date' => Carbon::create($targetYear, $targetMonth, 15)->toDateString(),
+            'all_meds_taken' => true,
+            'content' => '2024年1月の記録',
+        ]);
+        $medication2 = Medication::factory()->create(['medication_name' => '薬B']);
+        $timingTag2 = TimingTag::factory()->create(['timing_name' => '夕食後', 'category_name' => '夕']);
+        PostMedicationRecord::factory()->create([
+            'post_id' => $postInTargetMonth->post_id,
+            'medication_id' => $medication2->medication_id,
+            'timing_tag_id' => $timingTag2->timing_tag_id,
+            'is_completed' => true,
+            'taken_dosage' => '2錠',
+        ]);
+
+        // 3. 別の月の投稿も作成 (表示されないことを確認するため)
+        Post::factory()->forUser($user)->create([
+            'post_date' => Carbon::create(2024, 2, 1)->toDateString(),
+            'content' => '2024年2月の記録',
+        ]);
+
+        // 4. カレンダーページにGETリクエストを送信 (特定の年と月を指定)
+        $response = $this->get(route('posts.calendar', ['year' => $targetYear, 'month' => $targetMonth]));
+
+        // 5. ステータスコードが200 OKであることを確認
+        $response->assertStatus(200);
+
+        // 6. ビューが正しいビューを使用していることを確認
+        $response->assertViewIs('posts.calendar');
+
+        // 7. ビューに渡された日付が期待通りであることを確認
+        $response->assertViewHas('date', function ($date) use ($targetYear, $targetMonth) {
+            return $date->year === $targetYear && $date->month === $targetMonth;
+        });
+
+        // 8. ビューに渡されたデータが期待通りであることを確認
+        $response->assertViewHas('medicationStatusByDay', function ($statusByDay) use ($postInTargetMonth, $medication2, $timingTag2) {
+            $this->assertArrayHasKey($postInTargetMonth->post_date->day, $statusByDay);
+            $this->assertEquals('completed', $statusByDay[$postInTargetMonth->post_date->day]['status']);
+            $this->assertArrayHasKey('medications', $statusByDay[$postInTargetMonth->post_date->day]);
+            $this->assertStringContainsString($medication2->medication_name, $statusByDay[$postInTargetMonth->post_date->day]['medications'][0]);
+            $this->assertStringContainsString('2錠', $statusByDay[$postInTargetMonth->post_date->day]['medications'][0]);
+
+            // 別の月の投稿が含まれていないことを確認
+            $this->assertCount(1, $statusByDay); // 15日の投稿のみが存在することを確認
+
+            return true;
+        });
     }
 }
