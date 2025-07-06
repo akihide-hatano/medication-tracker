@@ -228,4 +228,75 @@ class PostControllerTest extends TestCase
             'reason_not_taken' => '眠かったから',
         ]);
     }
+
+        /**
+     * 認証済みユーザーが自分の投稿の編集フォームにアクセスできるかテストする (Edit - 正常系)
+     */
+    public function test_authenticated_user_can_access_their_own_post_edit_form(): void
+    {
+        // 1. 認証済みユーザーを作成し、ログイン状態にする
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // 2. このユーザーの投稿を作成する (編集対象)
+        // テスト用のデータ（content, all_meds_taken, reason_not_taken）は、
+        // フォームにプリフィルされることを後で確認するために重要です。
+        $post = Post::factory()->forUser($user)->create([
+            'post_date' => '2025-07-10',
+            'content' => '編集フォームテスト用の内容',
+            'all_meds_taken' => false,
+            'reason_not_taken' => '気分が優れなかったため',
+        ]);
+
+        // 3. 関連する薬の記録も作成する (フォームの薬のリストに表示されることを確認するため)
+        // PostMedicationRecordを介して、medicationとtimingTagが関連付けられる
+        $medication = Medication::factory()->create(['medication_name' => 'テスト薬X']);
+        $timingTag = TimingTag::factory()->create(['timing_name' => '食後', 'category_name' => '昼']);
+        PostMedicationRecord::factory()->forPost($post)->forMedication($medication)->forTimingTag($timingTag)->create([
+            'is_completed' => false, // 服用していない
+            'taken_dosage' => '1錠',
+            'reason_not_taken' => '飲み忘れ', // 個別の服用記録の理由
+        ]);
+
+        // 4. 編集フォームページにGETリクエストを送信
+        // route('posts.edit', ['post' => $post->post_id]) は /posts/{post_id}/edit のURLを生成します。
+        $response = $this->get(route('posts.edit', ['post' => $post->post_id]));
+
+        // 5. ステータスコードが200 OKであることを確認 (ページが正常に表示された)
+        $response->assertStatus(200);
+
+        // 6. ビューが正しいビューを使用していることを確認
+        $response->assertViewIs('posts.edit');
+
+        // 7. フォームに既存のデータがプリフィルされていることを確認
+        // value属性や表示テキストで確認します。
+        // post_date は input type="date" の value 属性で確認
+        $response->assertSee('value="' . $post->post_date->format('Y-m-d') . '"', false); // falseでHTMLエスケープしない
+        // content (textarea など)
+        $response->assertSee($post->content);
+        // all_meds_taken (booleanなので、チェックボックスの状態を確認)
+        // false の場合、value="1" checked は存在しない
+        $response->assertDontSee('name="all_meds_taken" value="1" checked');
+        // reason_not_taken (all_meds_taken が false なので表示されるはず)
+        $response->assertSee($post->reason_not_taken);
+
+        // 8. 個別の薬の記録がプリフィルされていることを確認 (JavaScriptで動的に追加される要素に含まれるデータ)
+        // Blade側で hidden input や表示要素にこれらの値が含まれることを想定
+        // 例: <option value="{medication_id}" selected>薬の名前</option>
+        $response->assertSee($medication->medication_name);
+        $response->assertSee($timingTag->timing_name);
+        // 個別の服用量の入力フィールドのvalue
+        $response->assertSee('value="' . $medication->medication_id . '"', false); // 薬のID
+        $response->assertSee('value="' . $timingTag->timing_tag_id . '"', false); // タイミングタグのID
+        $response->assertSee('value="' . $post->postMedicationRecords->first()->taken_dosage . '"', false); // 服用量
+        $response->assertSee('value="' . $post->postMedicationRecords->first()->reason_not_taken . '"', false); // 個別の理由
+        $response->assertDontSee('name="medications[0][is_completed]" value="1" checked'); // 個別の服用済みチェックボックス (falseなのでチェックなし)
+
+        // 9. ビューに渡されるべき変数が存在するか確認（Bladeが動的に生成する要素の元データ）
+        $response->assertViewHas('medications');
+        $response->assertViewHas('timingTags');
+        $response->assertViewHas('displayCategories');
+        $response->assertViewHas('nestedCategorizedMedicationRecords');
+        $response->assertViewHas('jsInitialMedicationRecords');
+    }
 }
