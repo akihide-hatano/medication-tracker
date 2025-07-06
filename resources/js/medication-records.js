@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 existingRecordsWrapper = document.createElement('div');
                 existingRecordsWrapper.id = 'existing_medication_records_wrapper';
                 existingRecordsWrapper.className = 'space-y-6';
-                
+
                 const noRecordsMessage = document.getElementById('no_medication_records_message');
                 if (noRecordsMessage) {
                     noRecordsMessage.after(existingRecordsWrapper);
@@ -208,14 +208,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         let timingGroupsContainer = categoryGroupDiv.querySelector('.timing-groups-container');
-        if (!timingGroupsContainer) { 
+        if (!timingGroupsContainer) {
              timingGroupsContainer = document.createElement('div');
              timingGroupsContainer.className = 'space-y-4 timing-groups-container';
              categoryGroupDiv.appendChild(timingGroupsContainer);
         }
 
         let timingGroupDiv = timingGroupsContainer.querySelector(`.timing-group[data-timing-name="${timingName}"]`);
-        
+
         if (!timingGroupDiv) {
             timingGroupDiv = document.createElement('div');
             timingGroupDiv.className = 'timing-group p-3 border border-gray-200 rounded-md bg-gray-50';
@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     追加
                 </button>
             `;
-            
+
             let insertedTimingBefore = null;
             const existingTimingGroups = Array.from(timingGroupsContainer.querySelectorAll(':scope > .timing-group'));
 

@@ -232,7 +232,7 @@ class PostControllerTest extends TestCase
         /**
      * 認証済みユーザーが自分の投稿の編集フォームにアクセスできるかテストする (Edit - 正常系)
      */
-    public function test_authenticated_user_can_access_their_own_post_edit_form(): void
+    public function test_auth_user_post_edit_form(): void
     {
         // 1. 認証済みユーザーを作成し、ログイン状態にする
         $user = User::factory()->create();
@@ -301,5 +301,27 @@ class PostControllerTest extends TestCase
         $response->assertViewHas('displayCategories');
         $response->assertViewHas('nestedCategorizedMedicationRecords');
         $response->assertViewHas('jsInitialMedicationRecords');
+    }
+
+    public function test_auth_user_delete_form(): void
+    {
+        // 1. ユーザーを作成
+        $user = User::factory()->create();
+        // 2. 投稿を作成し、作成したユーザーに紐付ける
+        $post = Post::factory()->create(['user_id' => $user->id]);
+        // 3. 認証済みユーザーとして削除リクエストを送信
+        // actingAs() ヘルパーで指定したユーザーとして認証状態をシミュレート
+        $response = $this->actingAs($user)->delete(route('posts.destroy', $post));
+
+        // 4. 結果の検証
+        // データベースから投稿が削除されたことを確認
+        $this->assertDatabaseMissing('posts', ['id' => $post->id]);
+
+        // 投稿一覧ページまたはダッシュボードなど、適切なページにリダイレクトされたことを確認
+        // 例: トップページにリダイレクトされる場合
+        $response->assertRedirect(route('posts.index')); // または assertRedirect('/home') など適切なURLに修正してください
+
+        // セッションに成功メッセージが保存されたことを確認 (任意)
+        $response->assertSessionHas('message', '投稿が削除されました。'); // メッセージ内容もアプリケーションに合わせて修正してください
     }
 }
