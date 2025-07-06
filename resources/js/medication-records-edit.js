@@ -31,6 +31,44 @@ document.addEventListener('DOMContentLoaded', function() {
     allMedsTakenCheckbox.addEventListener('change', toggleReasonNotTaken);
 
     /**
+     * 個別の服用済みチェックボックスと理由フィールドの表示制御ロジックを設定する関数
+     * @param {HTMLElement} containerElement - イベントリスナーを設定する対象のコンテナ要素
+     */
+    function setupIndividualRecordListeners(containerElement) {
+        // コンテナ内の全ての「服用した」チェックボックスを取得
+        const checkboxes = containerElement.querySelectorAll('.individual-is-completed-checkbox');
+
+        checkboxes.forEach(checkbox => {
+            // 各チェックボックスに対応する「服用しなかった理由」フィールドを見つける
+            const individualReasonField = checkbox.closest('.medication-record-item').querySelector('.individual-reason-not-taken-field');
+
+            // individualReasonField が存在しない場合は何もしない（hidden inputの場合など）
+            if (!individualReasonField) {
+                return;
+            }
+
+            // 表示・非表示を切り替える関数
+            function toggleIndividualReasonField() {
+                if (checkbox.checked) { // チェックボックスが「チェックされている」場合
+                    individualReasonField.style.display = 'none'; // 理由フィールドを非表示にする
+                    const input = individualReasonField.querySelector('input[type="text"]');
+                    if (input) input.value = ''; // 非表示にする際に、理由の値をクリア
+                } else { // チェックボックスが「チェックされていない」場合
+                    individualReasonField.style.display = 'block'; // 理由フィールドを表示する
+                }
+            }
+
+            // チェックボックスの状態が変更されたら、上記関数を実行
+            checkbox.addEventListener('change', toggleIndividualReasonField);
+
+            // ★★★ここが重要★★★
+            // ページロード時（既存の記録）や、新しい記録が追加された直後にも、
+            // 初期状態を正しく設定するために一度実行します。
+            toggleIndividualReasonField();
+        });
+    }
+
+    /**
      * 新しい薬の記録アイテムのHTML要素を作成する関数。
      * これは「追加」ボタンが押されたときにのみ使用される。
      * @param {number} index - アイテムの一意なインデックス (name属性用)
@@ -70,6 +108,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const isCompletedChecked = initialData.is_completed ? 'checked' : '';
         const reasonNotTakenValue = initialData.reason_not_taken || '';
+        // 新規追加時、is_completedが未定義（またはfalse相当）の場合は理由フィールドを表示
+        // 初期データで is_completed が true であれば非表示、そうでなければ表示
+        const individualReasonStyle = (initialData.is_completed) ? 'display: none;' : 'display: block;';
+
 
         itemDiv.innerHTML = `
             <div class="flex justify-end mb-4">
@@ -95,10 +137,17 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="flex items-center">
                 <input type="hidden" name="medications[${index}][is_completed]" value="0">
-                <input type="checkbox" name="medications[${index}][is_completed]" id="is_completed_${index}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1" ${isCompletedChecked}>
+                <input type="checkbox" name="medications[${index}][is_completed]" id="is_completed_${index}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 individual-is-completed-checkbox" value="1" ${isCompletedChecked}>
                 <label for="is_completed_${index}" class="ml-2 block text-sm font-medium text-gray-700">服用した</label>
             </div>
-            <input type="hidden" name="medications[${index}][reason_not_taken]" value="${reasonNotTakenValue}">
+            <div class="mt-2 individual-reason-not-taken-field" style="${individualReasonStyle}">
+                <label for="reason_not_taken_med_${index}" class="block text-sm font-medium text-gray-700">服用しなかった理由 (個別)</label>
+                <input type="text"
+                       name="medications[${index}][reason_not_taken]"
+                       id="reason_not_taken_med_${index}"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                       value="${reasonNotTakenValue}">
+            </div>
         `;
 
         // 3秒後に緑のボーダーを消す
@@ -129,12 +178,6 @@ document.addEventListener('DOMContentLoaded', function() {
             categoryGroupDiv = document.createElement('div');
             categoryGroupDiv.className = 'category-group p-4 border border-gray-300 rounded-md bg-white mb-6';
             categoryGroupDiv.setAttribute('data-category-name', categoryName);
-
-            // アイコン生成ロジックとカテゴリ名表示を削除しました。
-            // 以前はここにカテゴリ名に応じたアイコンのHTMLを生成するswitch文がありました。
-            // 例: let categoryIconHtml = '';
-            // switch (categoryName) { ... }
-
             categoryGroupDiv.innerHTML = `
                 <h4 class="text-lg font-bold mb-3 flex items-center text-gray-800">
                     <span class="text-purple-600"></span> <!-- アイコン表示部分を空にしました -->
@@ -271,6 +314,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 medicationRecordsContainer.appendChild(item); 
                 console.warn('actionButtonsContainerが見つからなかったため、medicationRecordsContainerの末尾にアイテムを追加しました。');
             }
+            // 新しく追加された要素に対してイベントリスナーを設定
+            setupIndividualRecordListeners(item);
             medicationRecordIndex++;
         }
     });
@@ -301,6 +346,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     timing_tag_id: firstTimingTag.timing_tag_id // カテゴリ別追加ではタイミングを自動選択
                 });
                 medicationItemsContainer.appendChild(item);
+                // 新しく追加された要素に対してイベントリスナーを設定
+                setupIndividualRecordListeners(item);
                 medicationRecordIndex++;
                 console.log(`カテゴリ別アイテムを追加しました (カテゴリ: ${categoryName}, インデックス: ${medicationRecordIndex - 1})`);
             } else {
@@ -385,46 +432,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 timing_tag_id: timingTagId // クリックされたタイミングタグのIDを初期値として設定
             });
             medicationItemsContainer.appendChild(newItem);
+            // 新しく追加された要素に対してイベントリスナーを設定
+            setupIndividualRecordListeners(newItem);
             medicationRecordIndex++;
             console.log(`タイミング別アイテムを追加しました (タイミング: ${timingName}, インデックス: ${medicationRecordIndex - 1})`);
         }
     });
 
-    /**
-     * 個別の服用済みチェックボックスと理由フィールドの表示制御ロジックを設定する関数
-     * @param {HTMLElement} containerElement - イベントリスナーを設定する対象のコンテナ要素
-     */
-    function setupIndividualRecordListeners(containerElement) {
-        // コンテナ内の全ての「服用した」チェックボックスを取得
-        const checkboxes = containerElement.querySelectorAll('.individual-is-completed-checkbox');
-
-        checkboxes.forEach(checkbox => {
-            // 各チェックボックスに対応する「服用しなかった理由」フィールドを見つける
-            const individualReasonField = checkbox.closest('.medication-record-item').querySelector('.individual-reason-not-taken-field');
-
-            // 表示・非表示を切り替える関数
-            function toggleIndividualReasonField() {
-                if (checkbox.checked) { // チェックボックスが「チェックされている」場合
-                    individualReasonField.style.display = 'none'; // 理由フィールドを非表示にする
-                    const input = individualReasonField.querySelector('input[type="text"]');
-                    if (input) input.value = ''; // 非表示にする際に、理由の値をクリア
-                } else { // チェックボックスが「チェックされていない」場合
-                    individualReasonField.style.display = 'block'; // 理由フィールドを表示する
-                }
-            }
-
-            // チェックボックスの状態が変更されたら、上記関数を実行
-            checkbox.addEventListener('change', toggleIndividualReasonField);
-
-            // ★★★ここが重要★★★
-            // ページロード時（既存の記録）や、新しい記録が追加された直後にも、
-            // 初期状態を正しく設定するために一度実行します。
-            toggleIndividualReasonField();
-        });
-    }
-    // ページロード時に既存の記録に対してリスナーを設定
+    // ページロード時に既存の記録に対してリスナーを設定する
     const existingRecordsWrapper = document.getElementById('existing_medication_records_wrapper');
     if (existingRecordsWrapper) {
         setupIndividualRecordListeners(existingRecordsWrapper);
-}
+    }
 });
