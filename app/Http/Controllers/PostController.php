@@ -410,15 +410,15 @@ public function edit(Post $post)
 
         $userExists = User::where('id', $userId)->exists();
         if (!$userExists) {
-             Log::error("User ID {$userId} not found for calendar display.");
-             return redirect()->route('home')->with('error', 'カレンダー表示に必要なユーザーが見つかりません。');
+            Log::error("User ID {$userId} not found for calendar display.");
+            return redirect()->route('home')->with('error', 'カレンダー表示に必要なユーザーが見つかりません。');
         }
 
         $posts = Post::with(['postMedicationRecords.medication', 'postMedicationRecords.timingTag'])
-                     ->where('user_id', $userId)
-                     ->whereMonth('post_date', $month)
-                     ->whereYear('post_date', $year)
-                     ->get();
+                    ->where('user_id', $userId)
+                    ->whereMonth('post_date', $month)
+                    ->whereYear('post_date', $year)
+                    ->get();
 
         $medicationStatusByDay = [];
         foreach ($posts as $post) {
@@ -459,8 +459,8 @@ public function edit(Post $post)
         $userId = Auth::id();
 
         if (!User::where('id', $userId)->exists()) {
-             Log::error("User ID {$userId} not found for daily records display.");
-             return redirect()->route('home')->with('error', '投稿詳細表示に必要なユーザーが見つかりません。');
+            Log::error("User ID {$userId} not found for daily records display.");
+            return redirect()->route('home')->with('error', '投稿詳細表示に必要なユーザーが見つかりません。');
         }
 
         $posts = Post::with([
@@ -478,7 +478,7 @@ public function edit(Post $post)
         ->get()
         ->unique('category_name')
         ->values();
-        
+
         // 2. 各投稿ごとの nestedCategorizedMedicationRecords の生成
         // $posts コレクションの各Postオブジェクトに、nestedCategorizedMedicationRecords プロパティを追加します。
         $posts->each(function($post_item){ // ① $postsコレクションの各要素を順番に処理
