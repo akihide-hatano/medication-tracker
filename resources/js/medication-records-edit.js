@@ -159,141 +159,8 @@ document.addEventListener('DOMContentLoaded', function() {
         return itemDiv;
     }
 
-    /**
-     * カテゴリブロックとタイミンググループのHTML要素を取得または作成する関数。
-     * @param {string} categoryName - カテゴリ名
-     * @param {string} timingName - タイミング名
-     * @param {number} timingTagId - タイミングタグID（新規作成時にボタンに紐づけるため）
-     * @returns {Object} { categoryGroupDiv: HTMLElement, timingGroupDiv: HTMLElement, medicationItemsContainer: HTMLElement }
-     */
-    function getOrCreateCategoryAndTimingGroups(categoryName, timingName, timingTagId) {
-        let categoryGroupDiv = medicationRecordsContainer.querySelector(`.category-group[data-category-name="${categoryName}"]`);
-        let medicationItemsContainer;
-
-        // #existing_medication_records_wrapper を取得
-        let existingRecordsWrapper = document.getElementById('existing_medication_records_wrapper');
-
-        // カテゴリグループが存在しない場合は作成
-        if (!categoryGroupDiv) {
-            categoryGroupDiv = document.createElement('div');
-            categoryGroupDiv.className = 'category-group p-4 border border-gray-300 rounded-md bg-white mb-6';
-            categoryGroupDiv.setAttribute('data-category-name', categoryName);
-            categoryGroupDiv.innerHTML = `
-                <h4 class="text-lg font-bold mb-3 flex items-center text-gray-800">
-                    <span class="text-purple-600"></span> <!-- アイコン表示部分を空にしました -->
-                    ${categoryName}
-                </h4>
-                <div class="space-y-4 timing-groups-container"></div>
-            `;
-            // 既存のレコードラッパーが存在しない場合は新しく作成し、適切な位置に挿入
-            if (!existingRecordsWrapper) {
-                existingRecordsWrapper = document.createElement('div');
-                existingRecordsWrapper.id = 'existing_medication_records_wrapper';
-                existingRecordsWrapper.className = 'space-y-6';
-
-                const noRecordsMessage = document.getElementById('no_medication_records_message');
-                if (noRecordsMessage) {
-                    noRecordsMessage.before(existingRecordsWrapper);
-                    noRecordsMessage.style.display = 'none'; // メッセージを非表示に
-                    console.log('existingRecordsWrapperを作成し、noRecordsMessageの前に挿入しました。');
-                } else if (actionButtonsContainer) {
-                    actionButtonsContainer.before(existingRecordsWrapper);
-                    console.log('existingRecordsWrapperを作成し、actionButtonsContainerの前に挿入しました。');
-                } else {
-                    medicationRecordsContainer.appendChild(existingRecordsWrapper);
-                    console.log('existingRecordsWrapperを作成し、medicationRecordsContainerの最後に追加しました。');
-                }
-            }
-
-            // カテゴリの表示順に従って挿入
-            let insertedBefore = null;
-            const existingCategoryGroups = Array.from(existingRecordsWrapper.querySelectorAll(':scope > .category-group'));
-            for (const existingGroup of existingCategoryGroups) {
-                const existingCategoryName = existingGroup.dataset.categoryName;
-                const existingOrder = displayCategoriesData[existingCategoryName]?.category_order || 999;
-                const newOrder = displayCategoriesData[categoryName]?.category_order || 999;
-
-                if (newOrder < existingOrder) {
-                    insertedBefore = existingGroup;
-                    break;
-                }
-            }
-
-            if (insertedBefore) {
-                insertedBefore.parentNode.insertBefore(categoryGroupDiv, insertedBefore);
-                console.log(`カテゴリグループ "${categoryName}" を既存のカテゴリの前に挿入しました。`);
-            } else {
-                existingRecordsWrapper.appendChild(categoryGroupDiv);
-                console.log(`カテゴリグループ "${categoryName}" を既存のカテゴリの最後に追加しました。`);
-            }
-        }
-
-        let timingGroupsContainer = categoryGroupDiv.querySelector('.timing-groups-container');
-        if (!timingGroupsContainer) { 
-             timingGroupsContainer = document.createElement('div');
-             timingGroupsContainer.className = 'space-y-4 timing-groups-container';
-             categoryGroupDiv.appendChild(timingGroupsContainer);
-        }
-
-        let timingGroupDiv = timingGroupsContainer.querySelector(`.timing-group[data-timing-name="${timingName}"]`);
-        
-        // タイミンググループが存在しない場合は作成
-        if (!timingGroupDiv) {
-            timingGroupDiv = document.createElement('div');
-            timingGroupDiv.className = 'timing-group p-3 border border-gray-200 rounded-md bg-gray-50';
-            timingGroupDiv.setAttribute('data-timing-name', timingName);
-
-            // タイミング名表示を再挿入
-            timingGroupDiv.innerHTML = `
-                <h5 class="font-semibold text-gray-700 text-base mb-2">${timingName}</h5>
-                <div class="medication-record-items-for-timing space-y-3"></div>
-                <button type="button" class="add-medication-record-for-timing inline-flex items-center px-3 py-1 bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 mt-3"
-                    data-timing-tag-id="${timingTagId}"
-                    data-timing-name="${timingName}"
-                    data-category-name="${categoryName}">
-                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    追加
-                </button>
-            `;
-            
-            // タイミングタグの順番にソートして挿入
-            let insertedTimingBefore = null;
-            const existingTimingGroups = Array.from(timingGroupsContainer.querySelectorAll(':scope > .timing-group'));
-
-            for (const existingTimingGroup of existingTimingGroups) {
-                const existingTimingName = existingTimingGroup.dataset.timingName;
-                const existingTimingTag = Object.values(timingTagsData).find(tag => tag.timing_name === existingTimingName);
-                const newTimingTag = Object.values(timingTagsData).find(tag => tag.timing_name === timingName);
-
-                if (existingTimingTag && newTimingTag && newTimingTag.timing_tag_id < existingTimingTag.timing_tag_id) {
-                    insertedTimingBefore = existingTimingGroup;
-                    break;
-                }
-            }
-
-            if (insertedTimingBefore) {
-                timingGroupsContainer.insertBefore(timingGroupDiv, insertedTimingBefore);
-                console.log(`タイミンググループ "${timingName}" を既存のタイミングの前に挿入しました。`);
-            } else {
-                timingGroupsContainer.appendChild(timingGroupDiv);
-                console.log(`タイミンググループ "${timingName}" を既存のタイミングの最後に追加しました。`);
-            }
-            medicationItemsContainer = timingGroupDiv.querySelector('.medication-record-items-for-timing');
-        } else {
-            // 既存のタイミンググループの場合、innerHTMLは変更しない
-            medicationItemsContainer = timingGroupDiv.querySelector('.medication-record-items-for-timing');
-            if (!medicationItemsContainer) { 
-                medicationItemsContainer = document.createElement('div');
-                medicationItemsContainer.className = 'medication-record-items-for-timing space-y-3';
-                timingGroupDiv.appendChild(medicationItemsContainer);
-            }
-        }
-
-        return { categoryGroupDiv, timingGroupDiv, medicationItemsContainer };
-    }
-
-    // 「薬の記録を新規追加 (カテゴリ未指定)」ボタンのイベントリスナー
-    // イベント委譲で add_medication_record_overall ボタンを処理
+    // // 「薬の記録を新規追加 (カテゴリ未指定)」ボタンのイベントリスナー
+    // // イベント委譲で add_medication_record_overall ボタンを処理
     medicationRecordsContainer.addEventListener('click', function(event) {
         if (event.target.id === 'add_medication_record_overall') {
             const item = createMedicationRecordItem(medicationRecordIndex, {}); // 空のオブジェクトを渡す
@@ -307,11 +174,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 新しいフォームは常に actionButtonsContainer の直前に挿入する
             if (actionButtonsContainer) {
-                actionButtonsContainer.before(item); 
+                actionButtonsContainer.before(item);
                 console.log('新しいアイテムをactionButtonsContainerの直前に挿入しました。');
             } else {
                 // 万が一 actionButtonsContainer が見つからなかった場合のフォールバック（medicationRecordsContainer の末尾）
-                medicationRecordsContainer.appendChild(item); 
+                medicationRecordsContainer.appendChild(item);
                 console.warn('actionButtonsContainerが見つからなかったため、medicationRecordsContainerの末尾にアイテムを追加しました。');
             }
             // 新しく追加された要素に対してイベントリスナーを設定
@@ -324,15 +191,14 @@ document.addEventListener('DOMContentLoaded', function() {
     medicationRecordsContainer.addEventListener('click', function(event) {
         if (event.target.classList.contains('add-medication-record-by-category')) {
             const categoryName = event.target.dataset.categoryName;
-            
             const timingTagsInCategory = Object.values(timingTagsData).filter(tag => tag.category_name === categoryName);
-            
+
             if (timingTagsInCategory.length > 0) {
                 const firstTimingTag = timingTagsInCategory.sort((a, b) => a.timing_tag_id - b.timing_tag_id)[0];
-                
+
                 const { medicationItemsContainer } = getOrCreateCategoryAndTimingGroups(
-                    categoryName, 
-                    firstTimingTag.timing_name, 
+                    categoryName,
+                    firstTimingTag.timing_name,
                     firstTimingTag.timing_tag_id
                 );
                 // 既存の「薬の記録がありません」メッセージがあれば非表示にする
@@ -398,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     p.id = 'no_medication_records_message';
                     p.className = 'text-gray-600 mb-4';
                     p.textContent = '薬の記録がありません。下のボタンで追加してください。';
-                    
+
                     // actionButtonsContainer の直前に追加
                     if (actionButtonsContainer) {
                         actionButtonsContainer.before(p);
