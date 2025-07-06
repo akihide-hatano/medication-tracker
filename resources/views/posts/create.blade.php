@@ -45,11 +45,13 @@
                         {{-- 全ての薬を服用済みチェックボックス --}}
                         <div class="mb-4 flex items-center">
                             <input type="hidden" name="all_meds_taken" value="0">
+                            {{-- old('all_meds_taken', true) はデフォルトでチェック状態にするロジック --}}
                             <input type="checkbox" name="all_meds_taken" id="all_meds_taken" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1" {{ old('all_meds_taken', true) ? 'checked' : '' }}>
                             <label for="all_meds_taken" class="ml-2 block text-sm font-medium text-gray-700">全ての薬を服用済み</label>
                         </div>
 
                         {{-- 服用しなかった理由 (条件付き表示) --}}
+                        {{-- old('all_meds_taken', true) はデフォルトでチェック状態なので、最初は非表示 --}}
                         <div class="mb-6" id="reason_not_taken_field" style="{{ old('all_meds_taken', true) ? 'display: none;' : '' }}">
                             <label for="reason_not_taken" class="block text-sm font-medium text-gray-700">服用しなかった理由</label>
                             <textarea name="reason_not_taken" id="reason_not_taken" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">{{ old('reason_not_taken') }}</textarea>
@@ -63,13 +65,21 @@
                             </h3>
                             <div id="medication_records_container">
                                 {{-- 以前の入力値があればカテゴリとタイミングでグルーピングして再表示 --}}
-                                @if (!$nestedCategorizedMedicationRecords->isEmpty())
+                                {{-- ★ここから修正：old('medications') の存在チェックを追加し、edit.blade.php と同様の構造にする --}}
+                                @if (old('medications'))
                                     <div id="existing_medication_records_wrapper" class="space-y-6">
+                                        {{-- old('medications') をカテゴリとタイミングでグルーピングするロジックをここに移植 --}}
+                                        {{-- これはController側で $nestedCategorizedMedicationRecords を生成しているはずなので、
+                                             そのロジックを old('medications') にも適用するか、
+                                             ここで簡易的にループして表示するかを検討します。
+                                             ここでは、Controllerが old('medications') を $nestedCategorizedMedicationRecords に変換して
+                                             渡している前提で進めます。もしそうでない場合は、Controller側で変換が必要です。
+                                        --}}
                                         @foreach ($displayCategories as $category)
-                                            @if ($nestedCategorizedMedicationRecords->has($category->category_name))
+                                            @if (isset($nestedCategorizedMedicationRecords) && $nestedCategorizedMedicationRecords->has($category->category_name))
                                                 @php
                                                     $categoryName = $category->category_name;
-                                                    $categoryIcon = '';
+                                                    $categoryIcon = ''; // JS側でアイコンを生成しないため空にする
                                                     $iconBaseClass = 'w-12 h-12 mr-2';
                                                     switch ($categoryName) {
                                                         case '朝': $categoryIcon = '<img src="' . asset('images/morning.png') . '" alt="朝" class="' . $iconBaseClass . '">'; break;
@@ -130,8 +140,19 @@
                                                                             </div>
                                                                             <div class="flex items-center">
                                                                                 <input type="hidden" name="medications[{{ $record['original_index'] }}][is_completed]" value="0">
-                                                                                <input type="checkbox" name="medications[{{ $record['original_index'] }}][is_completed]" id="is_completed_{{ $record['original_index'] }}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1" {{ (isset($record['is_completed']) && $record['is_completed']) ? 'checked' : '' }}>
+                                                                                <input type="checkbox" name="medications[{{ $record['original_index'] }}][is_completed]" id="is_completed_{{ $record['original_index'] }}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 individual-is-completed-checkbox" value="1" {{ (isset($record['is_completed']) && $record['is_completed']) ? 'checked' : '' }}>
                                                                                 <label for="is_completed_{{ $record['original_index'] }}" class="ml-2 block text-sm font-medium text-gray-700">服用した</label>
+                                                                            </div>
+                                                                            @php
+                                                                                $individualReasonStyle = (isset($record['is_completed']) && $record['is_completed']) ? 'display: none;' : 'display: block;';
+                                                                            @endphp
+                                                                            <div class="mt-2 individual-reason-not-taken-field" style="{{ $individualReasonStyle }}">
+                                                                                <label for="reason_not_taken_med_{{ $record['original_index'] }}" class="block text-sm font-medium text-gray-700">服用しなかった理由 (個別)</label>
+                                                                                <input type="text"
+                                                                                       name="medications[{{ $record['original_index'] }}][reason_not_taken]"
+                                                                                       id="reason_not_taken_med_{{ $record['original_index'] }}"
+                                                                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                                                                       value="{{ old('medications.'.$record['original_index'].'.reason_not_taken', $record['reason_not_taken'] ?? '') }}">
                                                                             </div>
                                                                         </div>
                                                                     @endforeach
@@ -154,11 +175,10 @@
                                     {{-- 既存の記録がない場合にメッセージと、新規追加されるフォームのラッパー、ボタンを表示 --}}
                                     <p id="no_medication_records_message" class="text-gray-600 mb-4">薬の記録がありません。下のボタンで追加してください。</p>
                                     <div id="new_medication_records_wrapper" class="space-y-3 mb-4">
-                                        {{-- JavaScriptによって新しいフォームがここに追加されます --}}
                                     </div>
                                 @endif
                                 {{-- 全体で薬を追加するボタン (カテゴリやタイミングを特定せずにどこでも追加できる) --}}
-                                <div class="flex justify-center mt-4">
+                                <div class="flex justify-center mt-4" id="action_buttons_container"> {{-- ★修正4: action_buttons_container のIDを移動 --}}
                                     <button type="button" id="add_medication_record_overall" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-lg hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105 mt-4">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                         薬の記録を新規追加 (カテゴリ未指定)
