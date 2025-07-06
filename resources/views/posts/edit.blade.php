@@ -149,12 +149,16 @@
                                                                             </div>
                                                                             <div class="flex items-center">
                                                                                 <input type="hidden" name="medications[{{ $record['original_index'] }}][is_completed]" value="0">
-                                                                                <input type="checkbox" name="medications[{{ $record['original_index'] }}][is_completed]" id="is_completed_{{ $record['original_index'] }}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1" {{ (isset($record['is_completed']) && $record['is_completed']) ? 'checked' : '' }}>
+                                                                                {{-- ★修正1: individual-is-completed-checkbox クラスを追加 --}}
+                                                                                <input type="checkbox" name="medications[{{ $record['original_index'] }}][is_completed]" id="is_completed_{{ $record['original_index'] }}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 individual-is-completed-checkbox" value="1" {{ (isset($record['is_completed']) && $record['is_completed']) ? 'checked' : '' }}>
                                                                                 <label for="is_completed_{{ $record['original_index'] }}" class="ml-2 block text-sm font-medium text-gray-700">服用した</label>
                                                                             </div>
 
-                                                                            {{-- ★★★追加された部分★★★ --}}
-                                                                            <div class="mt-2">
+                                                                            {{-- ★修正2: individual-reason-not-taken-field クラスと初期スタイルを追加 --}}
+                                                                            @php
+                                                                                $individualReasonStyle = (isset($record['is_completed']) && $record['is_completed']) ? 'display: none;' : 'display: block;';
+                                                                            @endphp
+                                                                            <div class="mt-2 individual-reason-not-taken-field" style="{{ $individualReasonStyle }}">
                                                                                 <label for="reason_not_taken_med_{{ $record['original_index'] }}" class="block text-sm font-medium text-gray-700">服用しなかった理由 (個別)</label>
                                                                                 <input type="text"
                                                                                        name="medications[{{ $record['original_index'] }}][reason_not_taken]"
@@ -162,7 +166,6 @@
                                                                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                                                                        value="{{ old('medications.'.$record['original_index'].'.reason_not_taken', $record['reason_not_taken'] ?? '') }}">
                                                                             </div>
-                                                                            {{-- ★★★ここまで追加★★★ --}}
                                                                         </div>
                                                                     @endforeach
                                                                 </div> {{-- .medication-record-items-for-timing --}}

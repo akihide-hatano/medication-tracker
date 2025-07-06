@@ -389,4 +389,42 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log(`タイミング別アイテムを追加しました (タイミング: ${timingName}, インデックス: ${medicationRecordIndex - 1})`);
         }
     });
+
+    /**
+     * 個別の服用済みチェックボックスと理由フィールドの表示制御ロジックを設定する関数
+     * @param {HTMLElement} containerElement - イベントリスナーを設定する対象のコンテナ要素
+     */
+    function setupIndividualRecordListeners(containerElement) {
+        // コンテナ内の全ての「服用した」チェックボックスを取得
+        const checkboxes = containerElement.querySelectorAll('.individual-is-completed-checkbox');
+
+        checkboxes.forEach(checkbox => {
+            // 各チェックボックスに対応する「服用しなかった理由」フィールドを見つける
+            const individualReasonField = checkbox.closest('.medication-record-item').querySelector('.individual-reason-not-taken-field');
+
+            // 表示・非表示を切り替える関数
+            function toggleIndividualReasonField() {
+                if (checkbox.checked) { // チェックボックスが「チェックされている」場合
+                    individualReasonField.style.display = 'none'; // 理由フィールドを非表示にする
+                    const input = individualReasonField.querySelector('input[type="text"]');
+                    if (input) input.value = ''; // 非表示にする際に、理由の値をクリア
+                } else { // チェックボックスが「チェックされていない」場合
+                    individualReasonField.style.display = 'block'; // 理由フィールドを表示する
+                }
+            }
+
+            // チェックボックスの状態が変更されたら、上記関数を実行
+            checkbox.addEventListener('change', toggleIndividualReasonField);
+
+            // ★★★ここが重要★★★
+            // ページロード時（既存の記録）や、新しい記録が追加された直後にも、
+            // 初期状態を正しく設定するために一度実行します。
+            toggleIndividualReasonField();
+        });
+    }
+    // ページロード時に既存の記録に対してリスナーを設定
+    const existingRecordsWrapper = document.getElementById('existing_medication_records_wrapper');
+    if (existingRecordsWrapper) {
+        setupIndividualRecordListeners(existingRecordsWrapper);
+}
 });
