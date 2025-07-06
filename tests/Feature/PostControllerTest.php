@@ -493,5 +493,16 @@ class PostControllerTest extends TestCase
         $response->assertViewHas('medicationStatusByDay', []);
     }
 
-    
+    /**
+     * @test
+     * 未認証ユーザーがカレンダーページにアクセスできないことをテストする
+     */
+    public function test_guest_cannot_view_calendar(): void
+    {
+        // 1. ログインせずにカレンダーページにGETリクエストを送信
+        $response = $this->get(route('posts.calendar'));
+
+        // 2. ログインページにリダイレクトされることを確認
+        $response->assertRedirect(route('login'));
+    }
 }
