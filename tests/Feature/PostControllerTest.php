@@ -252,10 +252,13 @@ class PostControllerTest extends TestCase
         // PostMedicationRecordを介して、medicationとtimingTagが関連付けられる
         $medication = Medication::factory()->create(['medication_name' => 'テスト薬X']);
         $timingTag = TimingTag::factory()->create(['timing_name' => '食後', 'category_name' => '昼']);
-        PostMedicationRecord::factory()->forPost($post)->forMedication($medication)->forTimingTag($timingTag)->create([
-            'is_completed' => false, // 服用していない
+        PostMedicationRecord::factory()->create([
+            'post_id' => $post->post_id,             // PostモデルのIDを直接渡す
+            'medication_id' => $medication->medication_id, // MedicationモデルのIDを直接渡す
+            'timing_tag_id' => $timingTag->timing_tag_id,   // TimingTagモデルのIDを直接渡す
+            'is_completed' => false,
             'taken_dosage' => '1錠',
-            'reason_not_taken' => '飲み忘れ', // 個別の服用記録の理由
+            'reason_not_taken' => '飲み忘れ',
         ]);
 
         // 4. 編集フォームページにGETリクエストを送信

@@ -152,6 +152,17 @@
                                                                                 <input type="checkbox" name="medications[{{ $record['original_index'] }}][is_completed]" id="is_completed_{{ $record['original_index'] }}" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="1" {{ (isset($record['is_completed']) && $record['is_completed']) ? 'checked' : '' }}>
                                                                                 <label for="is_completed_{{ $record['original_index'] }}" class="ml-2 block text-sm font-medium text-gray-700">服用した</label>
                                                                             </div>
+
+                                                                            {{-- ★★★追加された部分★★★ --}}
+                                                                            <div class="mt-2">
+                                                                                <label for="reason_not_taken_med_{{ $record['original_index'] }}" class="block text-sm font-medium text-gray-700">服用しなかった理由 (個別)</label>
+                                                                                <input type="text"
+                                                                                       name="medications[{{ $record['original_index'] }}][reason_not_taken]"
+                                                                                       id="reason_not_taken_med_{{ $record['original_index'] }}"
+                                                                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                                                                       value="{{ old('medications.'.$record['original_index'].'.reason_not_taken', $record['reason_not_taken'] ?? '') }}">
+                                                                            </div>
+                                                                            {{-- ★★★ここまで追加★★★ --}}
                                                                         </div>
                                                                     @endforeach
                                                                 </div> {{-- .medication-record-items-for-timing --}}
@@ -174,9 +185,7 @@
                                     <p id="no_medication_records_message" class="text-gray-600 mb-4">薬の記録がありません。下のボタンで追加してください。</p>
                                 @endif
 
-                                {{-- ★ここが重要★ 全体で薬を追加するボタンとカテゴリ別ボタンをまとめるコンテナ --}}
-                                {{-- このコンテナは medication_records_container の最後の要素として配置し、
-                                    新しい薬の記録フォームはこのコンテナの直前に挿入されるようにする。 --}}
+                                {{-- 全体で薬を追加するボタンとカテゴリ別ボタンをまとめるコンテナ --}}
                                 <div id="action_buttons_container" class="mb-4 flex flex-wrap gap-2 justify-center mt-4">
                                     <button type="button" id="add_medication_record_overall" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-lg hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
