@@ -8,6 +8,8 @@ use App\Models\Medication;
 use App\Models\TimingTag;
 use App\Models\TimingCategory; // TimingCategoryモデルはリレーション経由で使う可能性があるので残しておきます
 use Illuminate\Http\Request;
+use App\Http\Requests\PostStoreRequest;
+use App\Http\Requests\PostUpdateRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -112,19 +114,9 @@ class PostController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function store(Request $request)
+    public function store(PostStoreRequest $request)
     {
-        $validatedData = $request->validate([
-            'post_date' => ['required', 'date'],
-            'content' => ['nullable', 'string', 'max:1000'],
-            'all_meds_taken' => ['required', 'boolean'],
-            'reason_not_taken' => ['nullable', 'string', 'max:500', 'required_if:all_meds_taken,0'],
-            'medications' => ['required', 'array', 'min:1'],
-            'medications.*.medication_id' => ['required', 'exists:medications,medication_id'],
-            'medications.*.timing_tag_id' => ['required', 'exists:timing_tags,timing_tag_id'],
-            'medications.*.is_completed' => ['required', 'boolean'],
-            'medications.*.taken_dosage' => 'nullable|string|max:255',
-        ]);
+        $validatedData = $request->validated();
 
         try {
             DB::beginTransaction();
@@ -281,7 +273,6 @@ public function edit(Post $post)
         $orderedTimingTags = TimingTag::orderBy('category_order')
                                     ->orderBy('timing_tag_id')
                                     ->get();
-
         // old('medications', $post->postMedicationRecords->toArray()); の代わりに $jsInitialMedicationRecords を使う
         // $jsInitialMedicationRecords は既に配列の形になっていることを想定
         foreach ($orderedTimingTags as $timingTag) {
@@ -344,22 +335,9 @@ public function edit(Post $post)
      * @param  \App\Models\Post  $post
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(Request $request, Post $post)
+    public function update(PostUpdateRequest $request, Post $post)
     {
-
-        $validatedData = $request->validate([
-            'post_date' => ['required', 'date'],
-            'content' => ['nullable', 'string', 'max:1000'],
-            'all_meds_taken' => ['required', 'boolean'],
-            'reason_not_taken' => ['nullable', 'string', 'max:500', 'required_if:all_meds_taken,0'],
-            'medications' => ['required', 'array', 'min:1'],
-            'medications.*.medication_id' => ['required', 'exists:medications,medication_id'],
-            'medications.*.timing_tag_id' => ['required', 'exists:timing_tags,timing_tag_id'],
-            'medications.*.is_completed' => ['required', 'boolean'],
-            'medications.*.taken_dosage' => 'nullable|string|max:255',
-            'medications.*.reason_not_taken' => 'nullable|string|max:500',
-        ]);
-
+        $validatedData = $request->validated();
 
         DB::beginTransaction();
         try {
