@@ -464,4 +464,34 @@ class PostControllerTest extends TestCase
             return true;
         });
     }
+
+    public function test_auth_user_can_view_calendar_with_no_posts_for_month():void
+    {
+        //1.承認済みのuserを作成し、Login状態にする
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // 2. 投稿がない月を指定 (例: 過去の適当な月)
+        $targetYear = 2023;
+        $targetMonth = 1; // 1月
+
+        // 3. カレンダーページにGETリクエストを送信
+        $response = $this->get(route('posts.calendar', ['year' => $targetYear, 'month' => $targetMonth]));
+
+        // 4. ステータスコードが200 OKであることを確認
+        $response->assertStatus(200);
+
+        // 5. ビューが正しいビューを使用していることを確認
+        $response->assertViewIs('posts.calendar');
+
+        // 6. ビューに渡された日付が期待通りであることを確認
+        $response->assertViewHas('date', function ($date) use ($targetYear, $targetMonth) {
+            return $date->year === $targetYear && $date->month === $targetMonth;
+        });
+
+        // 7. medicationStatusByDay が空であることを確認
+        $response->assertViewHas('medicationStatusByDay', []);
+    }
+
+    
 }
