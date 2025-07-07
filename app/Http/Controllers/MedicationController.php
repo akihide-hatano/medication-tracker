@@ -46,8 +46,9 @@ class MedicationController extends Controller
     {
         $from_date = $request->query('from_date');
         $from_post_id = $request->query('from_post_id');
+        $from_medication_id = $request->query('from_medication_id');
 
-        return view('medications.show', compact('medication','from_date','from_post_id'));
+        return view('medications.show', compact('medication','from_date','from_post_id', 'from_medication_id'));
     }
 
     /**

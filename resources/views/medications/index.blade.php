@@ -40,7 +40,7 @@
                                     <p class="text-sm text-gray-600 mb-1"><strong class="text-gray-700">副作用:</strong> {{ $medication->side_effects ?? 'なし' }}</p>
                                     <p class="text-sm text-gray-600 mb-4"><strong class="text-gray-700">備考:</strong> {{ $medication->notes ?? 'なし' }}</p>
                                     <div class="flex justify-end items-center space-x-2">
-                                        <a href="{{ route('medications.show', $medication->medication_id) }}" class="text-blue-600 hover:text-blue-900 text-sm">詳細</a>
+                                       <a href="{{ route('medications.show', ['medication' => $medication->medication_id, 'from_medication_id' => $medication->medication_id]) }}" class="text-blue-600 hover:text-blue-900 text-sm">詳細</a>
                                         <a href="{{ route('medications.edit', $medication->medication_id) }}" class="text-green-600 hover:text-green-900 text-sm">編集</a>
                                         <form action="{{ route('medications.destroy', $medication->medication_id) }}" method="POST" onsubmit="return confirm('本当にこの薬を削除しますか？');">
                                             @csrf
