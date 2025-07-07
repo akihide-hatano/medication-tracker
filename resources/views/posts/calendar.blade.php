@@ -1,8 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            服薬カレンダー ({{ $date->format('Y年m月') }})
-        </h2>
+        <div class="flex items-center justify-center gap-3">
+            <img class="w-8 h-8" src="{{asset('images/calendar.png')}}" alt="カレンダーのアイコン">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                服薬カレンダー ({{ $date->format('Y年m月') }})
+            </h2>
+
+        </div>
     </x-slot>
 
     <div class="py-12">
