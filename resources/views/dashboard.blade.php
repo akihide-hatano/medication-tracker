@@ -21,12 +21,13 @@
                         <p class="text-xl text-blue-700 mb-4">
                             {{ \Carbon\Carbon::today()->format('Y年m月d日') }} の記録を確認しましょう
                         </p>
-                        <a href="{{ route('posts.daily_records', ['dateString' => \Carbon\Carbon::today()->format('Y-m-d')]) }}" class="inline-flex items-center px-8 py-4 bg-blue-700 text-white text-xl rounded-lg shadow-lg hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
+                        {{-- ★ここを修正★ --}}
+                        <a href="{{ route('posts.daily_records', ['date' => \Carbon\Carbon::today()->format('Y-m-d')]) }}" class="inline-flex items-center px-8 py-4 bg-blue-700 text-white text-xl rounded-lg shadow-lg hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150 transform hover:scale-105">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-check mr-2"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
                             今日の記録へ
                         </a>
                         <div class="mt-4">
-                             <a href="{{ route('posts.calendar') }}" class="text-blue-600 hover:underline text-lg">
+                            <a href="{{ route('posts.calendar') }}" class="text-blue-600 hover:underline text-lg">
                                 カレンダー全体を見る
                             </a>
                         </div>
