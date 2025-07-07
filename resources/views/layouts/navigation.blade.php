@@ -18,9 +18,6 @@
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     @auth
                         {{-- 認証済みユーザー向けのリンク --}}
-                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                            {{ __('Dashboard') }}
-                        </x-nav-link>
                         {{-- ここに他の認証済みユーザー向けリンクを追加できます --}}
                         <x-nav-link :href="route('medications.index')" :active="request()->routeIs('medications.index')">
                             {{ __('薬一覧') }}
@@ -95,9 +92,6 @@
         <div class="pt-2 pb-3 space-y-1">
             @auth
                 {{-- 認証済みユーザー向けのレスポンシブリンク --}}
-                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                    {{ __('Dashboard') }}
-                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('medications.index')" :active="request()->routeIs('medications.index')">
                     {{ __('薬一覧') }}
                 </x-responsive-nav-link>

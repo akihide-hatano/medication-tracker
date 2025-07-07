@@ -1,9 +1,12 @@
 <x-app-layout>
     {{-- $header スロットにページタイトルを渡す --}}
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            薬の一覧
-        </h2>
+        <div class="flex items-center justify-center gap-2">
+            <img class="w-10 h-10" src="/images/prn.png" alt="">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                薬の一覧
+            </h2>
+        </div>
     </x-slot>
 
     {{-- Page Content (メインコンテンツ) --}}
