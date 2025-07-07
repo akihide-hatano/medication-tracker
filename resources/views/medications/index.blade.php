@@ -51,6 +51,9 @@
                                 </div>
                             @endforeach
                         </div>
+                        <div class="mt-8">
+                            {{ $medications->links() }}
+                        </div>
                     @endif
 
                     <div class="mt-6 text-center">
