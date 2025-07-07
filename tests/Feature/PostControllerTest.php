@@ -642,7 +642,6 @@ class PostControllerTest extends TestCase
             $this->assertEquals($med2->medication_name, $retrievedPost2->nestedCategorizedMedicationRecords['夕']['夕食後']->first()->medication->medication_name);
             $this->assertFalse($retrievedPost2->nestedCategorizedMedicationRecords['夕']['夕食後']->first()->is_completed); // 未服用であること
 
-
             return true; // 全てのアサートが成功すれば true を返す
         });
     }
