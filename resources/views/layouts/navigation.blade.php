@@ -5,12 +5,12 @@
                 <div class="shrink-0 flex items-center">
                     {{-- 認証済みならダッシュボードへ、未認証ならホームへ --}}
                     @auth
-                        <a href="{{ route('dashboard') }}" class="text-gray-800 text-xl font-bold">
-                            内服管理アプリ
+                        <a href="{{ route('dashboard') }}" class="text-gray-600 text-xl font-bold">
+                            あんしん手帳
                         </a>
                     @else
-                        <a href="{{ route('home') }}" class="text-gray-800 text-xl font-bold">
-                            内服管理アプリ
+                        <a href="{{ route('home') }}" class="text-gray-600 text-xl font-bold">
+                            あんしん手帳
                         </a>
                     @endauth
                 </div>
