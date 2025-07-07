@@ -13,6 +13,7 @@ use App\Models\PostMedicationRecord;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Vite;
+use PHPUnit\Framework\Attributes\Test; // PHPUnit Attributesを使用する場合
 
 class PostControllerTest extends TestCase
 {
@@ -325,7 +326,8 @@ class PostControllerTest extends TestCase
         $response->assertSessionHas('success', '投稿が正常に削除されました！'); // メッセージ内容もアプリケーションに合わせて修正してください
     }
 
- public function test_auth_user_can_view_current_month_calendar(): void
+    #[Test]
+    public function test_auth_user_can_view_current_month_calendar(): void
     {
         // 1. 認証済みユーザーを作成し、ログイン状態にする
         $user = User::factory()->create();
@@ -401,10 +403,7 @@ class PostControllerTest extends TestCase
         });
     }
 
-    /**
-     * @test
-     * 認証済みユーザーが特定の月のカレンダーを正常に閲覧できることをテストする
-     */
+    #[Test]
     public function test_auth_user_can_view_specific_month_calendar(): void
     {
         // 1. 認証済みユーザーを作成し、ログイン状態にする
@@ -465,6 +464,7 @@ class PostControllerTest extends TestCase
         });
     }
 
+    #[Test]
     public function test_auth_user_can_view_calendar_with_no_posts_for_month():void
     {
         //1.承認済みのuserを作成し、Login状態にする
@@ -493,10 +493,7 @@ class PostControllerTest extends TestCase
         $response->assertViewHas('medicationStatusByDay', []);
     }
 
-    /**
-     * @test
-     * 未認証ユーザーがカレンダーページにアクセスできないことをテストする
-     */
+    #[Test]
     public function test_guest_cannot_view_calendar(): void
     {
         // 1. ログインせずにカレンダーページにGETリクエストを送信
@@ -504,5 +501,149 @@ class PostControllerTest extends TestCase
 
         // 2. ログインページにリダイレクトされることを確認
         $response->assertRedirect(route('login'));
+    }
+
+    #[Test]
+    public function test_auth_user_can_view_specific_date_daily_records(): void
+    {
+        // 1. 認証済みユーザーを作成し、ログイン状態にする
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // 2. 特定の日付を決定 (例: 今日)
+        $targetDate = Carbon::today(); // 今日の日付
+        $targetDateString = $targetDate->toDateString(); // 'YYYY-MM-DD' 形式の文字列
+
+        // 3. ログインユーザーの投稿を複数作成 (服用済みと未服用を混ぜる)
+        // 3-1. 服用済みの投稿1
+        $post1 = Post::factory()->forUser($user)->create([
+            'post_date' => $targetDateString,
+            'content' => '朝食後の薬は全て服用しました。',
+            'all_meds_taken' => true,
+        ]);
+        $med1 = Medication::factory()->create(['medication_name' => '薬X']);
+        $tagMorning = TimingTag::factory()->create(['timing_name' => '朝食後', 'category_name' => '朝', 'category_order' => 1]);
+        $tagNight = TimingTag::factory()->create(['timing_name' => '就寝前', 'category_name' => '就寝', 'category_order' => 4]);
+        PostMedicationRecord::factory()->create([
+            'post_id' => $post1->post_id,
+            'medication_id' => $med1->medication_id,
+            'timing_tag_id' => $tagMorning->timing_tag_id,
+            'is_completed' => true,
+            'taken_dosage' => '1錠',
+            'reason_not_taken' => null,
+        ]);
+
+        // 3-2. 未服用の投稿2 (同じ日付で別の投稿を作成)
+        $post2 = Post::factory()->forUser($user)->create([
+            'post_date' => $targetDateString,
+            'content' => '夕食後の薬を飲み忘れました。',
+            'all_meds_taken' => false,
+            'reason_not_taken' => '完全に忘れていました',
+        ]);
+        $med2 = Medication::factory()->create(['medication_name' => '薬Y']);
+        $tagEvening = TimingTag::factory()->create(['timing_name' => '夕食後', 'category_name' => '夕', 'category_order' => 3]);
+        PostMedicationRecord::factory()->create([
+            'post_id' => $post2->post_id,
+            'medication_id' => $med2->medication_id,
+            'timing_tag_id' => $tagEvening->timing_tag_id,
+            'is_completed' => false,
+            'taken_dosage' => '1包',
+            'reason_not_taken' => '飲み忘れ',
+        ]);
+
+        // 3-3. 別の薬記録を追加 (Post1に関連するが、別のタイミングカテゴリ)
+        $med3 = Medication::factory()->create(['medication_name' => '睡眠導入剤']);
+        PostMedicationRecord::factory()->create([
+            'post_id' => $post1->post_id, // post1に紐付け
+            'medication_id' => $med3->medication_id,
+            'timing_tag_id' => $tagNight->timing_tag_id, // 就寝前
+            'is_completed' => true,
+            'taken_dosage' => '1カプセル',
+            'reason_not_taken' => null,
+        ]);
+
+
+        // 4. 他のユーザーの同じ日付の投稿を作成 (表示されないことを確認するため)
+        $otherUser = User::factory()->create();
+        Post::factory()->forUser($otherUser)->create([
+            'post_date' => $targetDateString,
+            'content' => '他のユーザーの今日の記録',
+            'all_meds_taken' => true,
+        ]);
+
+        // 5. posts.daily_records ルートにGETリクエストを送信 (日付パラメータ付き)
+        $response = $this->get(route('posts.daily_records', ['date' => $targetDateString]));
+
+        // 6. レスポンスの検証
+        // 6-1. HTTPステータスが 200 OK であることを確認
+        $response->assertStatus(200);
+
+        // 6-2. 正しいビューが使用されていることを確認
+        $response->assertViewIs('posts.daily_detail');
+
+        // 6-3. ビューに渡された $date 変数が期待通りであることを確認
+        $response->assertViewHas('date', function ($date) use ($targetDate) {
+            return $date->toDateString() === $targetDate->toDateString();
+        });
+
+        // 6-4. ビューに渡された $displayCategories が期待通りであることを確認
+        $response->assertViewHas('displayCategories', function ($categories) {
+            // ここでは少なくとも「朝」「夕」「就寝」が含まれていることを確認
+            $categoryNames = $categories->pluck('category_name')->toArray();
+            $this->assertContains('朝', $categoryNames);
+            $this->assertContains('夕', $categoryNames);
+            $this->assertContains('就寝', $categoryNames);
+            // その他のカテゴリも必要に応じて検証
+            return true;
+        });
+
+        // 6-5. ビューに渡された $posts コレクションの内容を詳細に検証
+        $response->assertViewHas('posts', function ($posts) use ($user, $post1, $post2, $med1, $tagMorning, $med2, $tagEvening, $med3, $tagNight) {
+            // ログインユーザーの投稿が2つ取得されていることを確認
+            $this->assertCount(2, $posts);
+            $this->assertTrue($posts->contains('post_id', $post1->post_id));
+            $this->assertTrue($posts->contains('post_id', $post2->post_id));
+
+            // 投稿が新しい順に並んでいるか (orderBy('post_date', 'desc') は同じ日付ならID順になる)
+            // このテストでは同じ日付なので、orderBy('post_id', 'desc') と同じ結果になるはず
+            // Factoryが自動採番するIDは通常昇順なので、Post2が先にくることが多い
+            $this->assertEquals($post2->post_id, $posts->first()->post_id, 'Posts should be ordered by post_date desc (then ID desc)'); // Post2の方が後に作られた可能性が高い
+            $this->assertEquals($post1->post_id, $posts->last()->post_id);
+
+
+            // post1 の nestedCategorizedMedicationRecords を検証
+            $retrievedPost1 = $posts->firstWhere('post_id', $post1->post_id);
+            $this->assertNotNull($retrievedPost1->nestedCategorizedMedicationRecords, 'nestedCategorizedMedicationRecords should exist for Post1.');
+
+            // Post1: カテゴリ「朝」に「朝食後」の薬X
+            $this->assertArrayHasKey('朝', $retrievedPost1->nestedCategorizedMedicationRecords);
+            $this->assertArrayHasKey('朝食後', $retrievedPost1->nestedCategorizedMedicationRecords['朝']);
+            $this->assertCount(1, $retrievedPost1->nestedCategorizedMedicationRecords['朝']['朝食後']);
+            $this->assertEquals($med1->medication_id, $retrievedPost1->nestedCategorizedMedicationRecords['朝']['朝食後']->first()->medication_id);
+            $this->assertEquals($med1->medication_name, $retrievedPost1->nestedCategorizedMedicationRecords['朝']['朝食後']->first()->medication->medication_name);
+
+            // Post1: カテゴリ「就寝」に「就寝前」の睡眠導入剤
+            $this->assertArrayHasKey('就寝', $retrievedPost1->nestedCategorizedMedicationRecords);
+            $this->assertArrayHasKey('就寝前', $retrievedPost1->nestedCategorizedMedicationRecords['就寝']);
+            $this->assertCount(1, $retrievedPost1->nestedCategorizedMedicationRecords['就寝']['就寝前']);
+            $this->assertEquals($med3->medication_id, $retrievedPost1->nestedCategorizedMedicationRecords['就寝']['就寝前']->first()->medication_id);
+            $this->assertEquals($med3->medication_name, $retrievedPost1->nestedCategorizedMedicationRecords['就寝']['就寝前']->first()->medication->medication_name);
+
+
+            // post2 の nestedCategorizedMedicationRecords を検証
+            $retrievedPost2 = $posts->firstWhere('post_id', $post2->post_id);
+            $this->assertNotNull($retrievedPost2->nestedCategorizedMedicationRecords, 'nestedCategorizedMedicationRecords should exist for Post2.');
+
+            // Post2: カテゴリ「夕」に「夕食後」の薬Y
+            $this->assertArrayHasKey('夕', $retrievedPost2->nestedCategorizedMedicationRecords);
+            $this->assertArrayHasKey('夕食後', $retrievedPost2->nestedCategorizedMedicationRecords['夕']);
+            $this->assertCount(1, $retrievedPost2->nestedCategorizedMedicationRecords['夕']['夕食後']);
+            $this->assertEquals($med2->medication_id, $retrievedPost2->nestedCategorizedMedicationRecords['夕']['夕食後']->first()->medication_id);
+            $this->assertEquals($med2->medication_name, $retrievedPost2->nestedCategorizedMedicationRecords['夕']['夕食後']->first()->medication->medication_name);
+            $this->assertFalse($retrievedPost2->nestedCategorizedMedicationRecords['夕']['夕食後']->first()->is_completed); // 未服用であること
+
+
+            return true; // 全てのアサートが成功すれば true を返す
+        });
     }
 }

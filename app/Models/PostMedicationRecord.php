@@ -26,6 +26,12 @@ class PostMedicationRecord extends Model
         'reason_not_taken',
     ];
 
+    // ★この部分を追加または修正してください★
+    protected $casts = [
+        'is_completed' => 'boolean', // is_completed をブーリアン型にキャスト
+        'taken_at' => 'datetime',    // taken_at も必要に応じてdatetimeにキャスト
+    ];
+
     // リレーションシップの定義
     /**
      * この服用記録が属する投稿（Post）を取得します。

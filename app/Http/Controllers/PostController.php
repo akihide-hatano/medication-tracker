@@ -471,6 +471,7 @@ public function edit(Post $post)
         ->where('user_id', $userId)
         ->whereDate('post_date', $date)
         ->orderBy('post_date', 'desc')
+        ->orderBy('post_id', 'desc')   // ★同じ日付の場合はIDの降順（新しいものが上）★
         ->get();
         // $displayCategories の定義を TimingTag モデルから取得するように変更
         $displayCategories = TimingTag::whereNotNull('category_name')
