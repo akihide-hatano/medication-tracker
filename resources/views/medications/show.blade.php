@@ -1,8 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            薬の詳細: {{ $medication->medication_name }}
-        </h2>
+        <div class="flex items-center justify-center gap-2">
+            <img class="w-10 h-10" src="/images/prn.png" alt="">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                薬の詳細:{{$medication->medication_name}}
+            </h2>
+        </div>
     </x-slot>
 
     <div class="py-12">
@@ -11,13 +14,12 @@
                 <div class="p-6 text-gray-900">
                     <div class="bg-blue-50 p-6 rounded-lg shadow-md border border-blue-200">
                         <h3 class="text-2xl font-bold text-blue-800 mb-4">{{ $medication->medication_name }}</h3>
-                        <p class="text-gray-700 mb-2"><strong>薬のID:</strong> {{ $medication->medication_id }}</p>
                         <p class="text-gray-700 mb-2"><strong>容量:</strong> {{ $medication->dosage }}</p>
                         <p class="text-gray-700 mb-2"><strong>効果:</strong> {{ $medication->effect }}</p>
                         <p class="text-gray-700 mb-2"><strong>副作用:</strong> {{ $medication->side_effects }}</p>
                         <p class="text-gray-700 mb-4"><strong>備考:</strong> {{ $medication->notes }}</p>
 
-                        <div class="mt-6 pt-4 border-t border-gray-300 flex justify-end space-x-3">
+                        <div class="mt-6 pt-4 border-t border-blue-500 flex justify-end space-x-3">
                             <a href="{{ route('medications.edit', $medication->medication_id) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                 編集
                             </a>
