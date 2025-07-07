@@ -1,8 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            投稿編集 ({{ $post->post_date->format('Y年m月d日') }})
-        </h2>
+        <div class="flex items-center justify-center gap-2">
+            <img class="w-10 h-10" src="{{ asset('images/memo.png') }}" alt="メモのアイコン">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                投稿編集 ({{ $post->post_date->format('Y年m月d日') }})
+            </h2>
+        </div>
     </x-slot>
 
     <div class="py-12">
