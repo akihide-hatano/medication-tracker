@@ -13,7 +13,7 @@ class MedicationController extends Controller
 
     public function index()
     {
-        $medications = Medication::all();
+        $medications = Medication::orderBy('medication_name')->paginate(6);
         return view('medications.index', compact('medications'));
     }
 
