@@ -1,15 +1,4 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="bg-blue-600 text-white p-4 shadow-md">
-            <div class="container mx-auto flex justify-between items-center">
-                <h1 class="text-2xl font-bold">内服管理アプリ</h1>
-                <nav>
-                    <a href="{{ route('login') }}" class="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-100 mr-2">ログイン</a>
-                    <a href="{{ route('register') }}" class="bg-blue-800 text-white px-4 py-2 rounded-lg hover:bg-blue-700">新規登録</a>
-                </nav>
-            </div>
-        </div>
-    </x-slot>
 
     <div class="flex-grow container mx-auto p-8 flex items-center justify-center">
         <div class="text-center">
