@@ -33,6 +33,11 @@
                     {{ $slot }}
                 </div>
             </main>
+
+            {{-- footerのスロット --}}
+            @isset($footer)
+                {{$footer}}
+            @endisset
         </div>
     </body>
 </html>

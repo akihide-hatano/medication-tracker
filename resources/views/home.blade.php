@@ -15,7 +15,7 @@
 
     <x-slot name="footer">
         <div class="bg-gray-800 text-white p-4 text-center">
-            <p>&copy; {{ date('Y') }} 私の服薬トラッカー. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} あんしん手帳. All rights reserved.</p>
         </div>
     </x-slot>
 </x-app-layout>
