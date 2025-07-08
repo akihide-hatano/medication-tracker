@@ -91,7 +91,7 @@
         <div class="pt-2 pb-3 space-y-1">
             @auth
                 {{-- 認証済みユーザー向けのレスポンシブリンク --}}
-                <x-responsive-nav-link :href="route('medications.index')" :active="request()->routeIs('medications.index')" class="text-gray-700 bg-blue-100 hover:bg-blue-200 flex items-center justify-center">
+                <x-responsive-nav-link :href="route('medications.index')" :active="request()->routeIs('medications.index')" class="text-gray-700 bg-blue-100 hover:bg-blue-200">
                     {{ __('薬一覧') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('posts.create')" :active="request()->routeIs('posts.create')" class="text-gray-700 bg-blue-100 hover:bg-blue-200">
@@ -111,9 +111,9 @@
             @endauth
         </div>
 
-        <div class="pt-4 pb-1 border-t border-gray-200">
+        <div class="pt-4 pb-1">
             @auth
-                <div class="px-4">
+                <div class="px-4 text-center">
                     <div class="font-medium text-base text-white">{{ Auth::user()->name }}</div>
                     <div class="font-medium text-sm text-blue-100">{{ Auth::user()->email }}</div>
                 </div>
