@@ -21,9 +21,18 @@
                         </div>
                     @endif
 
-                    {{-- 新しい薬を追加するボタン --}}
-                    <div class="flex justify-end mb-6">
-                        <a href="{{ route('medications.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                    {{-- 新しい薬を追加するボタンと検察 --}}
+                    <div class="mb-6 flex justify-end items-center">
+                        <form action="{{ route('medications.index') }}" method="GET" class="flex items-center space-x-2">
+                            <input type="search" name="search" placeholder="薬を検索..."
+                                class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                value="{{ request('search') }}">
+                            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">検索</button>
+                            @if(request('search'))
+                                <a href="{{ route('medications.index') }}" class="px-4 py-2 text-gray-600 hover:text-gray-900">クリア</a>
+                            @endif
+                        </form>
+                        <a href="{{ route('medications.create') }}" class="ml-4 px-6 py-2 bg-purple-600 text-white rounded-md shadow-md hover:bg-purple-700">
                             新しい薬を追加
                         </a>
                     </div>
@@ -40,7 +49,7 @@
                                     <p class="text-sm text-gray-600 mb-1"><strong class="text-gray-700">副作用:</strong> {{ $medication->side_effects ?? 'なし' }}</p>
                                     <p class="text-sm text-gray-600 mb-4"><strong class="text-gray-700">備考:</strong> {{ $medication->notes ?? 'なし' }}</p>
                                     <div class="flex justify-end items-center space-x-2">
-                                       <a href="{{ route('medications.show', ['medication' => $medication->medication_id, 'from_medication_id' => $medication->medication_id]) }}" class="text-blue-600 hover:text-blue-900 text-sm">詳細</a>
+                                        <a href="{{ route('medications.show', ['medication' => $medication->medication_id, 'from_medication_id' => $medication->medication_id]) }}" class="text-blue-600 hover:text-blue-900 text-sm">詳細</a>
                                         <a href="{{ route('medications.edit', $medication->medication_id) }}" class="text-green-600 hover:text-green-900 text-sm">編集</a>
                                         <form action="{{ route('medications.destroy', $medication->medication_id) }}" method="POST" onsubmit="return confirm('本当にこの薬を削除しますか？');">
                                             @csrf
