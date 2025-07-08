@@ -66,7 +66,7 @@
                     @endif
 
                     <div class="mt-6 text-center">
-                        <a href="" class="text-indigo-600 hover:text-indigo-900">
+                        <a href="{{route('medications.index')}}" class="text-indigo-600 hover:text-indigo-900">
                             トップページに戻る
                         </a>
                     </div>
