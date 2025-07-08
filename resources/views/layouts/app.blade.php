@@ -35,9 +35,7 @@
             </main>
 
             {{-- footerのスロット --}}
-            @isset($footer)
-                {{$footer}}
-            @endisset
+            @include('layouts.footer')
         </div>
     </body>
 </html>
