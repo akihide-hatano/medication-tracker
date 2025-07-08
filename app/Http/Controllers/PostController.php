@@ -216,8 +216,8 @@ class PostController extends Controller
      * @param  \App\Models\Post  $post
      * @return \Illuminate\Contracts\View\View
      */
-public function edit(Post $post)
-    {
+    public function edit(Post $post)
+     {
         // 投稿の所有者でない場合はアクセスを拒否
         if ($post->user_id !== Auth::id()) {
             abort(403, 'Unauthorized action.');
