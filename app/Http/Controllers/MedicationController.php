@@ -7,14 +7,27 @@ use Illuminate\Http\Request;
 use App\Http\Requests\MedicationStoreRequest;
 use App\Http\Requests\MedicationUpdateRequest;
 use Illuminate\Support\Facades\Log; // Log も引き続き利用可能
+use Illuminate\Support\Facades\Auth;
 
 class MedicationController extends Controller
 {
 
-    public function index()
+    public function index(Request $request)
     {
-        $medications = Medication::orderBy('medication_name')->paginate(6);
-        return view('medications.index', compact('medications'));
+        $query = Medication::query();
+
+        // 検索クエリがあればフィルタリングを適用
+        if ($search = $request->input('search')) {
+            $query->where(function($q) use ($search) {
+                $q->where('medication_name', 'like', '%' . $search . '%')
+                  ->orWhere('effect', 'like', '%' . $search . '%')
+                  ->orWhere('side_effects', 'like', '%' . $search . '%')
+                  ->orWhere('notes', 'like', '%' . $search . '%');
+            });
+        }
+        $medications = $query->paginate(6); // 1ページに6件表示
+
+        return view('medications.index', compact('medications')); // 'categories' も削除
     }
 
     public function create()
