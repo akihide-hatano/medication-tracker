@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="bg-blue-600">
+<nav x-data="{ open: false }" class="bg-blue-600 border-b border-blue-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
@@ -76,7 +76,7 @@
                 @endauth
             </div>
 
-            <div class="-me-2 flex items-center sm:hidden">
+            <div class="flex items-center sm:hidden ml-auto"> {{-- -me-2 を削除し、ml-auto を追加 --}}
                 <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-blue-100 hover:text-white hover:bg-blue-700 focus:outline-none focus:bg-blue-700 focus:text-white transition duration-150 ease-in-out">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -91,7 +91,7 @@
         <div class="pt-2 pb-3 space-y-1">
             @auth
                 {{-- 認証済みユーザー向けのレスポンシブリンク --}}
-                <x-responsive-nav-link :href="route('medications.index')" :active="request()->routeIs('medications.index')" class="text-gray-700 bg-blue-100 hover:bg-blue-200 ">
+                <x-responsive-nav-link :href="route('medications.index')" :active="request()->routeIs('medications.index')" class="text-gray-700 bg-blue-100 hover:bg-blue-200 flex items-center justify-center">
                     {{ __('薬一覧') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('posts.create')" :active="request()->routeIs('posts.create')" class="text-gray-700 bg-blue-100 hover:bg-blue-200">
