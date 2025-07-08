@@ -24,7 +24,7 @@
                     {{-- 新しい薬を追加するボタンと検察 --}}
                     <div class="mb-6 flex justify-end items-center">
                         <form action="{{ route('medications.index') }}" method="GET" class="flex items-center space-x-2">
-                            <input type="search" name="search" placeholder="薬を検索..."
+                            <input type="search" name="search" placeholder="薬や効果などを検索"
                                 class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                 value="{{ request('search') }}">
                             <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">検索</button>

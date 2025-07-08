@@ -20,9 +20,7 @@ class MedicationController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function($q) use ($search) {
                 $q->where('medication_name', 'like', '%' . $search . '%')
-                  ->orWhere('effect', 'like', '%' . $search . '%')
-                  ->orWhere('side_effects', 'like', '%' . $search . '%')
-                  ->orWhere('notes', 'like', '%' . $search . '%');
+                ->orWhere('effect', 'like', '%' . $search . '%');
             });
         }
         $medications = $query->paginate(6); // 1ページに6件表示
