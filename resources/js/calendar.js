@@ -1,5 +1,3 @@
-// resources/js/calendar.js
-
 document.addEventListener('DOMContentLoaded', function() {
     // カレンダーグリッド要素を取得します。
     const calendarGrid = document.querySelector('.calendar-grid');
@@ -25,7 +23,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // カレンダーの1日より前の空のセル（前月の日付部分）を作成し、カレンダーグリッドに追加します。
     for (let i = 0; i < firstDayOfWeek; i++) {
         const emptyCell = document.createElement('div');
-        // ★修正点: h-24 に統一
         emptyCell.className = 'calendar-cell p-2 h-24 bg-gray-50 rounded-md border border-gray-100 flex items-center justify-center text-gray-400';
         calendarGrid.appendChild(emptyCell);
     }
@@ -39,26 +36,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 各日付の表示セルとなるdiv要素を作成します。
         const dayCell = document.createElement('div');
-        // ★修正点: h-24 に統一 (h-20 から変更)
         dayCell.className = 'calendar-cell flex flex-col items-center justify-center p-2 h-24 bg-white rounded-md shadow-sm border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors duration-200';
 
         // もし現在の日付が今日の日付と一致する場合、特別なCSSクラスを追加して強調表示します。
         const today = new Date();
         if (year === today.getFullYear() && month === (today.getMonth() + 1) && day === today.getDate()) {
-            // 既存の背景色とボーダー色、ホバー色を削除してから、新しい色を追加します
             dayCell.classList.remove('bg-white', 'border-gray-200', 'hover:bg-gray-50');
             dayCell.classList.add('bg-blue-200', 'border-blue-500', 'font-bold', 'hover:bg-blue-300');
         }
 
         // 日付セル全体をクリック可能にするための<a>要素を作成します。
         const cellLink = document.createElement('a');
-        // h-full を削除し、flex-grow を追加
         cellLink.href = postDetailUrl;
         cellLink.className = 'w-full flex flex-col items-center justify-center flex-grow no-underline text-current';
 
         // 日付の数字を表示するdiv要素を作成します。
         const dayNumber = document.createElement('div');
-        dayNumber.className = 'text-lg font-bold text-gray-800';
+        // ★★★ 修正箇所1: 日付の数字にのみ曜日ごとの色クラスを追加 ★★★
+        dayNumber.className = 'text-lg font-bold'; // デフォルトクラス
+        const currentDayDate = new Date(year, month - 1, day);
+        const dayOfWeek = currentDayDate.getDay();
+
+        if (dayOfWeek === 0) { // 日曜日
+            dayNumber.classList.add('text-red-600');
+        } else if (dayOfWeek === 6) { // 土曜日
+            dayNumber.classList.add('text-blue-600');
+        }
+
+        // 今日の日付の場合、曜日の色を上書きして黒に戻す
+        if (year === today.getFullYear() && month === (today.getMonth() + 1) && day === today.getDate()) {
+            dayNumber.classList.remove('text-red-600', 'text-blue-600');
+            dayNumber.classList.add('text-gray-800'); // 今日の日付の数字は濃い灰色に
+        }
         dayNumber.textContent = day;
         cellLink.appendChild(dayNumber);
 
@@ -72,8 +81,6 @@ document.addEventListener('DOMContentLoaded', function() {
         let tooltipText = '';
         // セルに表示する薬の名前やステータスのテキストを初期化します。
         let displayStatusText = '';
-        // テキストのデフォルト色をここで定義（未完了の場合など）
-        let statusTextColorClass = 'text-gray-600'; // デフォルトは灰色
 
         // その日のデータが存在するかどうかを確認します。
         if (dayData) {
@@ -82,14 +89,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 statusIndicator.innerHTML = '<span class="text-green-500">⚪︎</span>';
                 tooltipText = '全て服用済み';
                 displayStatusText = '完了';
-                statusTextColorClass = 'text-gray-500'; // ★修正点: 完了を赤色に
             }
             // 服用ステータスが「not_completed」（未完了あり）の場合の処理です。
             else if (dayData.status === 'not_completed') {
                 statusIndicator.innerHTML = '<span class="text-red-500">✕</span>';
                 tooltipText = '未完了あり';
                 displayStatusText = '未完了';
-                statusTextColorClass = 'text-red-600'; // ★修正点: 未完了は灰色にするか、別途指定
             }
             cellLink.title = tooltipText;
         } else {
@@ -97,14 +102,12 @@ document.addEventListener('DOMContentLoaded', function() {
             tooltipText = '記録なし';
             cellLink.title = tooltipText;
             displayStatusText = '記録なし'; // 記録なしの場合も表示テキストを設定
-            statusTextColorClass = 'text-gray-400'; // 記録なしは薄い灰色
         }
         cellLink.appendChild(statusIndicator);
 
         // 薬の名前やステータスを表示するdiv要素を作成します。
         const statusTextDisplay = document.createElement('div');
-        // ★修正点: text-xs に戻し、flex-shrink-0 を追加し、mb-2 を追加。mt-1 は削除したまま
-        statusTextDisplay.className = `text-xs ${statusTextColorClass} truncate w-full px-1 flex-shrink-0 mb-2`;
+        statusTextDisplay.className = `text-xs truncate w-full px-1 flex-shrink-0 mb-2 text-gray-800`;
         statusTextDisplay.textContent = displayStatusText;
         if (displayStatusText) { // テキストが存在する場合のみ追加
             cellLink.appendChild(statusTextDisplay);
@@ -123,7 +126,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 空のセルを作成し、カレンダーグリッドに追加します。
     for (let i = 0; i < remainingCells; i++) {
         const emptyCell = document.createElement('div');
-        // ★修正点: h-24 に統一
         emptyCell.className = 'calendar-cell p-2 h-24 bg-gray-50 rounded-md border border-gray-100 flex items-center justify-center text-gray-400';
         calendarGrid.appendChild(emptyCell);
     }
